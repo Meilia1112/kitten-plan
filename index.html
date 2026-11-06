@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f4f2ee">
+<meta name="robots" content="noindex, nofollow">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<title>幼猫喂食计划</title>
+<style>
+  :root{
+    --bg:#f4f2ee; --card:#fff; --line:#e3e0d8; --ink:#22221f; --sub:#7b7a72;
+    --green:#2f5d43; --green-bg:#e8f0ea; --amber:#8a6a2f; --amber-bg:#f7efdf;
+    --red:#8a3531; --red-bg:#fbeeec; --blue:#33506e; --blue-bg:#eef2f7;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    font-size:15px; line-height:1.6;
+    padding-bottom:calc(86px + env(safe-area-inset-bottom));
+  }
+  .wrap{max-width:520px;margin:0 auto;padding:0 14px}
+
+  header{
+    position:sticky;top:0;z-index:20;background:var(--bg);
+    padding:calc(12px + env(safe-area-inset-top)) 0 10px;
+    border-bottom:1px solid var(--line);
+  }
+  .headtop{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+  .headtop h1{font-size:16px;font-weight:600;margin:0;letter-spacing:.3px}
+  .age{font-size:12px;color:var(--sub);text-align:right;line-height:1.4}
+  .stats{display:flex;gap:14px;margin-top:8px}
+  .stat{flex:1;min-width:0}
+  .stat b{display:block;font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.2;white-space:nowrap}
+  .stat b small{font-size:11px;font-weight:400;color:var(--sub);margin-left:1px}
+  .stat span{font-size:10.5px;color:var(--sub);display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;margin:14px 0}
+  .card h2{font-size:13px;font-weight:600;margin:0 0 10px;color:var(--sub);letter-spacing:.4px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .card h2 em{font-style:normal;font-weight:400;font-size:11.5px;white-space:nowrap}
+
+  .meal{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px dashed var(--line)}
+  .meal:last-child{border-bottom:none;padding-bottom:2px}
+  .meal.now{background:var(--green-bg);margin:0 -14px;padding:12px 14px;border-radius:10px;border-bottom:none}
+  .meal.done{opacity:.55}
+  .time{width:48px;flex:0 0 48px;font-size:13px;font-weight:600;color:var(--sub);font-variant-numeric:tabular-nums}
+  .meal.now .time{color:var(--green)}
+  .what{flex:1;min-width:0}
+  .what .name{font-size:15px;font-weight:500}
+  .what .desc{font-size:11.5px;color:var(--sub);margin-top:2px;line-height:1.45}
+  .amt{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .amt b{font-size:18px;font-weight:600}
+  .amt i{font-style:normal;font-size:11.5px;color:var(--sub);margin-left:1px}
+  .tick{
+    border:1.5px solid var(--line);background:#fff;border-radius:50%;
+    width:26px;height:26px;flex:0 0 26px;display:flex;align-items:center;justify-content:center;
+    font-size:14px;color:transparent;cursor:pointer;transition:.15s;padding:0
+  }
+  .tick.on{background:var(--green);border-color:var(--green);color:#fff}
+
+  .total{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+  .total span{font-size:12px;color:var(--sub)}
+  .total b{font-size:15px;font-variant-numeric:tabular-nums;text-align:right}
+
+  .pick{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line)}
+  .pick:last-child{border-bottom:none;padding-bottom:2px}
+  .pick .lb{width:38px;flex:0 0 38px;font-size:13px;color:var(--sub)}
+  .pick select{
+    flex:1;min-width:0;appearance:none;border:1px solid var(--line);background:#fff;
+    border-radius:9px;padding:9px 28px 9px 10px;font-size:13.5px;font-family:inherit;color:var(--ink);
+    background-image:linear-gradient(45deg,transparent 50%,#8b8a82 50%),linear-gradient(135deg,#8b8a82 50%,transparent 50%);
+    background-position:calc(100% - 14px) 55%,calc(100% - 9px) 55%;
+    background-size:5px 5px,5px 5px;background-repeat:no-repeat;
+  }
+  .pick select:disabled{opacity:.45}
+  .pick .kc{font-size:11.5px;color:var(--sub);white-space:nowrap;font-variant-numeric:tabular-nums}
+
+  .treat{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .treat .txt{font-size:13px}
+  .stepper{display:flex;align-items:center;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+  .stepper button{border:0;background:#fff;width:38px;height:34px;font-size:17px;color:var(--ink);cursor:pointer;padding:0}
+  .stepper button:active{background:#f0eee8}
+  .stepper span{min-width:44px;text-align:center;font-size:13px;font-variant-numeric:tabular-nums}
+
+  table{width:100%;border-collapse:collapse}
+  th,td{padding:9px 5px;text-align:left;font-size:12.5px;border-bottom:1px solid var(--line)}
+  th{color:var(--sub);font-weight:500;font-size:11px;white-space:nowrap}
+  td{font-variant-numeric:tabular-nums}
+  tr.now-row td{background:var(--green-bg)}
+  tr.now-row td:first-child{border-radius:8px 0 0 8px}
+  tr.now-row td:last-child{border-radius:0 8px 8px 0}
+  .c{text-align:center}
+
+  .note{font-size:12px;color:var(--sub);margin:10px 0 0;line-height:1.7}
+  .warn{background:var(--red-bg);border:1px solid #eed4d0;border-radius:12px;padding:11px 13px;font-size:12.5px;color:var(--red);line-height:1.65;margin:14px 0}
+  .info{background:var(--blue-bg);border:1px solid #d5dfea;border-radius:12px;padding:11px 13px;font-size:12.5px;color:var(--blue);line-height:1.65;margin:14px 0}
+  .tag{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:5px;background:var(--amber-bg);color:var(--amber);margin-left:5px;vertical-align:1px}
+
+  .field{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .field:last-of-type{border-bottom:none}
+  .field label{font-size:14px}
+  .field .hint{display:block;font-size:11.5px;color:var(--sub);margin-top:2px}
+  input[type=date],input[type=number]{
+    border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:14px;
+    font-family:inherit;color:var(--ink);background:#fff;text-align:right;width:134px
+  }
+  input[type=range]{width:100%;accent-color:var(--green)}
+  input[type=checkbox]{width:24px;height:24px;accent-color:#2f5d43}
+  .slider{padding:12px 0;border-bottom:1px solid var(--line)}
+  .slider .row{display:flex;justify-content:space-between;font-size:14px;margin-bottom:8px}
+  .slider .row b{font-variant-numeric:tabular-nums}
+  .btn{
+    display:block;width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;
+    padding:12px;font-size:14px;font-family:inherit;color:var(--ink);margin-top:12px;cursor:pointer
+  }
+  .btn:active{background:#f0eee8}
+
+  .food{padding:11px 0;border-bottom:1px solid var(--line)}
+  .food:last-child{border-bottom:none}
+  .food .l1{display:flex;gap:8px;align-items:center}
+  .food input.nm{
+    flex:1;min-width:0;border:0;border-bottom:1px solid transparent;background:transparent;
+    font-size:14px;font-family:inherit;color:var(--ink);padding:3px 0
+  }
+  .food input.nm:focus{outline:none;border-bottom-color:var(--green)}
+  .food .del{border:0;background:transparent;color:var(--sub);font-size:18px;line-height:1;padding:4px 6px;cursor:pointer}
+  .food .l2{display:flex;gap:8px;align-items:center;margin-top:6px}
+  .food .l2 input{
+    width:78px;border:1px solid var(--line);border-radius:8px;padding:6px 8px;
+    font-size:13px;font-family:inherit;text-align:right;background:#fff;color:var(--ink)
+  }
+  .food .l2 select{
+    flex:1;border:1px solid var(--line);border-radius:8px;padding:6px 8px;
+    font-size:13px;font-family:inherit;background:#fff;color:var(--ink)
+  }
+  .food .l2 span{font-size:11.5px;color:var(--sub)}
+
+  .hist{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+  .hist:last-child{border-bottom:none}
+  .hist .d{width:66px;flex:0 0 66px;font-size:13px;font-variant-numeric:tabular-nums}
+  .hist .d small{display:block;font-size:10.5px;color:var(--sub)}
+  .hist .bar{flex:1;height:6px;background:#eeebe4;border-radius:3px;overflow:hidden}
+  .hist .bar i{display:block;height:100%;background:var(--green);border-radius:3px}
+  .hist .v{width:96px;flex:0 0 96px;text-align:right;font-size:11.5px;color:var(--sub);font-variant-numeric:tabular-nums}
+
+  nav{
+    position:fixed;left:0;right:0;bottom:0;z-index:30;
+    background:rgba(244,242,238,.97);border-top:1px solid var(--line);
+    padding:6px 0 calc(6px + env(safe-area-inset-bottom));
+    display:flex;justify-content:center;gap:2px
+  }
+  nav button{
+    border:0;background:transparent;font-family:inherit;font-size:11px;color:var(--sub);
+    padding:6px 12px;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px
+  }
+  nav button.on{color:var(--green);background:var(--green-bg);font-weight:600}
+  nav .dot{width:16px;height:16px;border-radius:5px;border:1.5px solid currentColor;opacity:.7}
+  nav button.on .dot{background:currentColor;opacity:.9}
+  .hide{display:none!important}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="headtop">
+      <h1 id="title">今日喂食</h1>
+      <div class="age" id="ageText">—</div>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="sWeight">—</b><span id="sWeightLbl">体重 kg</span></div>
+      <div class="stat"><b id="sKcal">—</b><span>每日 kcal</span></div>
+      <div class="stat"><b id="sDry">—</b><span>干粮 g</span></div>
+      <div class="stat"><b id="sWet">—</b><span>湿粮 g</span></div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section id="tab-today">
+    <div id="phaseBox"></div>
+
+    <div class="card">
+      <h2><span>今天吃什么</span><em>点开可换</em></h2>
+      <div class="pick">
+        <div class="lb">干粮</div>
+        <select id="selDry"></select>
+        <div class="kc" id="kcDry">—</div>
+      </div>
+      <div class="pick">
+        <div class="lb">湿粮</div>
+        <select id="selWet"></select>
+        <div class="kc" id="kcWet">—</div>
+      </div>
+      <div class="pick">
+        <div class="lb">冻干</div>
+        <select id="selFd"></select>
+        <div class="kc" id="kcFd">—</div>
+      </div>
+      <div class="pick" style="border-bottom:none">
+        <div class="lb"></div>
+        <div style="flex:1;font-size:12.5px;color:var(--sub)" id="fdHint">冻干每天 · 计入热量</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="fdInput" step="1" min="0" max="30" value="0"
+                 style="width:62px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:14px;text-align:right;font-family:inherit;background:#fff;color:var(--ink)">
+          <span style="font-size:12px;color:var(--sub)">g</span>
+        </div>
+      </div>
+      <p class="note" id="foodNote"></p>
+    </div>
+
+    <div class="card">
+      <h2><span>今天 · <span id="todayText"></span></span><em id="doneText"></em></h2>
+      <div id="mealList"></div>
+      <div class="total">
+        <span>全天合计</span>
+        <b id="totalText">—</b>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>本周加餐</h2>
+      <div class="treat">
+        <div class="txt">汤罐 / 零食包<br><span style="color:var(--sub);font-size:11.5px">一次开一个，分两天各半，当天干粮减 5 g</span></div>
+        <div class="stepper">
+          <button type="button" id="treatMinus">−</button>
+          <span id="treatCount">0/1</span>
+          <button type="button" id="treatPlus">+</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>这一阶段不要碰</h2>
+      <div class="note" style="margin:0">
+        · 不混粮：两种干粮不拌在一起<br>
+        · 不干喂主食冻干，必须泡软<br>
+        · 不给猫条、不补钙、不喂人食<br>
+        · 换新东西一次只加一个变量
+      </div>
+    </div>
+
+    <div class="warn">
+      软便超过 24 小时、便便带血或果冻状、呕吐加拒食 —— 直接去医院，带两小时内的新鲜粪便做粪检。
+    </div>
+  </section>
+
+  <section id="tab-hist" class="hide">
+    <div class="card">
+      <h2>最近 14 天</h2>
+      <div id="histList"></div>
+    </div>
+    <div class="card">
+      <h2>统计</h2>
+      <div id="histStats" class="note" style="margin:0"></div>
+    </div>
+    <div class="card">
+      <h2>体重记录</h2>
+      <div id="weightList"></div>
+      <p class="note">每次在设置里改体重，这里就多一条。差值能看出长得快不快。</p>
+    </div>
+  </section>
+
+  <section id="tab-growth" class="hide">
+    <div class="card">
+      <h2>按月龄的增长曲线</h2>
+      <table>
+        <thead><tr><th>阶段</th><th>体重</th><th class="c">kcal</th><th class="c">干粮</th><th class="c">湿粮</th><th class="c">餐次</th></tr></thead>
+        <tbody id="growthBody"></tbody>
+      </table>
+      <p class="note">按当前选中的干粮和湿粮热量换算。热量随体重上涨，但系数随月龄下降，所以增速是放缓的。</p>
+    </div>
+    <div class="card">
+      <h2>湿粮占比怎么变</h2>
+      <table>
+        <thead><tr><th>月龄</th><th class="c">占热量</th><th class="c">每天湿粮</th></tr></thead>
+        <tbody id="ratioBody"></tbody>
+      </table>
+      <p class="note">4–6 月以干粮为主，湿粮只补水；6 月后提到 1/4；9 月后到 1/3。成年后可到一半。</p>
+    </div>
+  </section>
+
+  <section id="tab-set" class="hide">
+    <div class="card">
+      <h2>基础信息</h2>
+      <div class="field">
+        <label>出生日期<span class="hint">用来算周龄和阶段</span></label>
+        <input type="date" id="inBirth">
+      </div>
+      <div class="field">
+        <label>实测体重<span class="hint" id="weightHint">每周称一次，改了会记一条</span></label>
+        <input type="number" id="inWeight" step="0.05" min="0.5" max="8">
+      </div>
+      <div class="field">
+        <label>每天喂午餐<span class="hint">家里没人就关掉，热量并入早晚</span></label>
+        <input type="checkbox" id="inLunch">
+      </div>
+      <div class="field">
+        <label>罐头启用日<span class="hint">这天之前只喂干粮</span></label>
+        <input type="date" id="inWetStart">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span>食物库</span><em id="foodCount">0 项</em></h2>
+      <div id="foodList"></div>
+      <button class="btn" type="button" id="btnAddFood">＋ 添加食物</button>
+      <p class="note">热量填包装背面的 kcal/100 g。干粮一般 380–420，主食罐 90–110，浓汤罐只有 40–60，冻干 350–400。名字可以直接改，改完自动保存。</p>
+    </div>
+
+    <div class="card">
+      <h2>湿粮占比</h2>
+      <div class="slider">
+        <div class="row"><span>占每日热量</span><b id="wetPctText">15%</b></div>
+        <input type="range" id="inWetPct" min="0" max="50" step="5">
+      </div>
+      <p class="note">默认按月龄自动。手动拖过就不再自动。</p>
+      <button class="btn" type="button" id="btnAuto">恢复按月龄自动</button>
+    </div>
+
+    <div class="card">
+      <h2>数据</h2>
+      <button class="btn" type="button" id="btnExport">导出记录（复制文本）</button>
+      <button class="btn" type="button" id="btnReset">恢复默认设置</button>
+      <p class="note">数据只存在这台设备，不上传。换设备需要重新填。</p>
+    </div>
+  </section>
+
+</main>
+
+<nav>
+  <button type="button" data-tab="today" class="on"><span class="dot"></span>今天</button>
+  <button type="button" data-tab="hist"><span class="dot"></span>记录</button>
+  <button type="button" data-tab="growth"><span class="dot"></span>成长</button>
+  <button type="button" data-tab="set"><span class="dot"></span>设置</button>
+</nav>
+
+<script>
+(function(){
+  var SKEY='kitten-plan-v4', HKEY='kitten-hist-v4', OLD='kitten-plan-v3';
+
+  var FOODS=[
+    {id:'d1',n:'冠能幼猫粮',t:'dry',k:400},
+    {id:'d2',n:'比乐鲜系列',t:'dry',k:390},
+    {id:'f1',n:'蓝氏主食冻干',t:'fd',k:380},
+    {id:'f2',n:'库卫鸡小胸冻干',t:'fd',k:390},
+    {id:'w1',n:'喵凡思主食罐',t:'wet',k:95},
+    {id:'w2',n:'帕蓝姆幼猫罐',t:'wet',k:90},
+    {id:'w3',n:'皇家 KLC 慕斯罐',t:'wet',k:100},
+    {id:'w4',n:'珍致主食罐',t:'wet',k:95},
+    {id:'w5',n:'格吾安鲜肉罐',t:'wet',k:105},
+    {id:'w6',n:'needcat 浓汤罐',t:'wet',k:55},
+    {id:'w7',n:'喵三餐餐包',t:'wet',k:75},
+    {id:'w8',n:'帕蓝姆汤罐',t:'wet',k:50},
+    {id:'w9',n:'小毛豆美浓汤',t:'wet',k:50},
+    {id:'w10',n:'爱喜雅零食包',t:'wet',k:60}
+  ];
+  var D={
+    birth:'2026-06-22',
+    weightLog:[{d:'2026-11-06',kg:1.8}],
+    lunch:true, wetPct:null, wetStart:'2026-11-23',
+    foods:FOODS, dryId:'d1', wetId:'w1', fdId:'f1', fdG:0
+  };
+
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+  function load(k,fb){
+    try{ var r=localStorage.getItem(k); return r?JSON.parse(r):clone(fb); }catch(e){ return clone(fb); }
+  }
+  var S=load(SKEY,null);
+  if(!S){
+    S=clone(D);
+    var old=load(OLD,null);
+    if(old){
+      ['birth','weightLog','lunch','wetStart'].forEach(function(k){ if(old[k]!==undefined) S[k]=old[k]; });
+      if(old.wetPct!==undefined) S.wetPct=old.wetPct;
+      if(old.dryKcal) S.foods[0].k=old.dryKcal;
+      if(old.wetKcal) S.foods[2].k=old.wetKcal;
+    }
+  }
+  if(!S.foods||!S.foods.length) S.foods=clone(FOODS);
+  var H=load(HKEY,{});
+
+  function saveS(){ try{ localStorage.setItem(SKEY,JSON.stringify(S)); }catch(e){} }
+  function saveH(){ try{ localStorage.setItem(HKEY,JSON.stringify(H)); }catch(e){} }
+
+  function pad(n){ return n<10?'0'+n:''+n; }
+  function today(){ var d=new Date(); return d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()); }
+  function parseD(s){ var d=new Date(s+'T00:00:00'); return isNaN(d)?null:d; }
+  function daysSince(s){
+    var d=parseD(s); if(!d) return null;
+    var t=new Date(); t.setHours(0,0,0,0);
+    return Math.floor((t-d)/86400000);
+  }
+  function weeksOf(){ var d=daysSince(S.birth); return d==null?null:d/7; }
+  function monthsOf(){ var d=daysSince(S.birth); return d==null?null:d/30.44; }
+
+  function foodById(id){ for(var i=0;i<S.foods.length;i++) if(S.foods[i].id===id) return S.foods[i]; return null; }
+  function dryFood(){ var f=foodById(S.dryId); if(!f||f.t!=='dry') f=S.foods.filter(function(x){return x.t==='dry';})[0]; return f||{k:400,n:'干粮'}; }
+  function wetFood(){ var f=foodById(S.wetId); if(!f||f.t!=='wet') f=S.foods.filter(function(x){return x.t==='wet';})[0]; return f||{k:100,n:'湿粮'}; }
+  function fdFood(){ var f=foodById(S.fdId); if(!f||f.t!=='fd') f=S.foods.filter(function(x){return x.t==='fd';})[0]; return f||{k:380,n:'冻干'}; }
+
+  function lastW(){
+    var log=(S.weightLog||[]).slice().sort(function(a,b){ return a.d<b.d?1:-1; });
+    return log[0]||null;
+  }
+  function ratePerDay(w){
+    if(w==null) return 0.010;
+    if(w<26) return 0.010;
+    if(w<39) return 0.0073;
+    return 0.004;
+  }
+  function estWeight(){
+    var lw=lastW(), w=weeksOf();
+    if(!lw){
+      var base=0.77+0.0525*(w||19.6);
+      return {kg:Math.max(0.8,Math.min(4.5,base)),est:true};
+    }
+    var dd=daysSince(lw.d)||0;
+    var grow=Math.min(0.6,dd*ratePerDay(w));
+    return {kg:Math.round((lw.kg+grow)*100)/100,est:dd>0};
+  }
+
+  function factor(w){
+    if(w==null) return 2.5;
+    if(w<16) return 2.8;
+    if(w<26) return 2.5;
+    if(w<39) return 2.2;
+    if(w<52) return 1.9;
+    return 1.6;
+  }
+  function autoWet(w){
+    if(w==null) return 15;
+    if(w<26) return 15;
+    if(w<39) return 25;
+    return 33;
+  }
+  function wetDays(){ var d=daysSince(S.wetStart); return d==null?-999:d; }
+  function wetOn(){ return wetDays()>=0; }
+
+  var DF=function(){ return dryFood(); }, WF=function(){ return wetFood(); }, FDF=function(){ return fdFood(); };
+
+  function compute(){
+    var weeks=weeksOf(), m=monthsOf(), ew=estWeight(), w=ew.kg;
+    var df=DF(), wf=WF(), ff=FDF();
+    var kcal=70*Math.pow(w,0.75)*factor(weeks);
+    var fdG=Math.max(0,Number(S.fdG)||0);
+    var fdKcal=Math.min(kcal*0.4, fdG*((Number(ff.k)||380)/100));
+    var rest=Math.max(0,kcal-fdKcal);
+    var pct=(S.wetPct==null)?autoWet(weeks):Number(S.wetPct);
+    var wetG=0;
+    if(wetOn()){
+      var target=rest*pct/100/((Number(wf.k)||100)/100);
+      wetG = wetDays()<4 ? Math.min(20,Math.round(target/5)*5) : Math.round(target/5)*5;
+    }
+    var usedWet=wetG*((Number(wf.k)||100)/100);
+    var dryG=Math.round((rest-usedWet)/((Number(df.k)||400)/100));
+    return {weeks:weeks,months:m,w:w,est:ew.est,kcal:Math.round(kcal),pct:pct,
+            wetG:wetG,dryG:dryG,fdG:fdG,wetOn:wetOn(),day:wetDays(),
+            df:df,wf:wf,ff:ff,
+            actual:Math.round(dryG*((Number(df.k)||400)/100)+usedWet+fdKcal)};
+  }
+
+  function ratios(wet,lunch,n){
+    var r = wet>0 ? [0.42,0.20,0.08,0.30] : [0.35,0.20,0.15,0.30];
+    if(!lunch || n===3){ r[0]+=r[1]*0.5; r[3]+=r[1]*0.5; r[1]=0; }
+    return r;
+  }
+
+  function split(c){
+    var n=(c.weeks!=null && c.weeks>=26)?3:4;
+    var r=ratios(c.wetG,S.lunch,n);
+    var arr=r.map(function(x){ return Math.round(c.dryG*x); });
+    var sum=arr.reduce(function(a,b){return a+b;},0);
+    arr[3]+=c.dryG-sum;
+    if(arr[3]<0){ arr[0]+=arr[3]; arr[3]=0; }
+    var w1=c.wetG, w2=0;
+    if(c.wetG>60){ w1=Math.round(c.wetG/2/5)*5; w2=c.wetG-w1; }
+    var list=[
+      {id:'m1',time:'08:30',name:'早餐',dry:arr[0],wet:0,fd:0,desc:c.df.n+'，放碗里自由吃 20 分钟'},
+      {id:'m2',time:'12:30',name:'午餐',dry:arr[1],wet:0,fd:0,desc:c.df.n+'，家里没人就跳过',skip:n===3||!S.lunch},
+      {id:'m3',time:'19:00',name:'晚餐',dry:arr[2],wet:w1,fd:0,desc:c.wetG>0?(c.wf.n+'，先给罐头再放干粮'):(c.df.n+'，罐头还没到启用日')},
+      {id:'m4',time:'23:00',name:'睡前',dry:arr[3],wet:w2,fd:0,desc:(w2>0?'湿粮这顿吃完，':'')+'干粮留 5 g 在碗里过夜'}
+    ];
+    if(c.fdG>0){
+      list.push({id:'m5',time:'15:00',name:'冻干加餐',dry:0,wet:0,fd:c.fdG,
+        desc:c.ff.n+'，38℃ 温水泡 5 分钟再给'});
+    }
+    list.sort(function(a,b){ return a.time<b.time?-1:1; });
+    return list;
+  }
+
+  function entry(){
+    var k=today();
+    if(!H[k]) H[k]={dry:0,wet:0,kcal:0,meals:0,ids:{}};
+    if(!H[k].ids) H[k].ids={};
+    return H[k];
+  }
+  function weekKey(){
+    var d=new Date(), one=new Date(d.getFullYear(),0,1);
+    var wk=Math.ceil(((d-one)/86400000+one.getDay()+1)/7);
+    return 'kitten-treat-'+d.getFullYear()+'-'+wk;
+  }
+
+  function fillSelects(){
+    var sd=document.getElementById('selDry'), sw=document.getElementById('selWet'), sf=document.getElementById('selFd');
+    var dOpt='', wOpt='', fOpt='';
+    S.foods.forEach(function(f){
+      var o='<option value="'+f.id+'">'+f.n+' · '+f.k+' kcal/100g</option>';
+      if(f.t==='dry') dOpt+=o;
+      else if(f.t==='wet') wOpt+=o;
+      else fOpt+=o;
+    });
+    sd.innerHTML=dOpt; sw.innerHTML=wOpt; sf.innerHTML=fOpt;
+    sd.value=S.dryId; sw.value=S.wetId; sf.value=S.fdId;
+    sw.disabled=!wetOn();
+    sf.disabled=!(Number(S.fdG)>0);
+  }
+
+  function normalize(){
+    var d=foodById(S.dryId), w=foodById(S.wetId), ch=false;
+    if(!d || d.t!=='dry'){
+      var fd=S.foods.filter(function(x){return x.t==='dry';})[0];
+      if(fd){ S.dryId=fd.id; ch=true; }
+    }
+    if(!w || w.t!=='wet'){
+      var fw=S.foods.filter(function(x){return x.t==='wet';})[0];
+      if(fw){ S.wetId=fw.id; ch=true; }
+    }
+    var fd=foodById(S.fdId);
+    if(!fd || fd.t!=='fd'){
+      var ff=S.foods.filter(function(x){return x.t==='fd';})[0];
+      if(ff){ S.fdId=ff.id; ch=true; }
+    }
+    if(ch) saveS();
+  }
+
+  function render(){
+    normalize();
+    var c=compute(), meals=split(c), e=entry();
+    e.dry=c.dryG; e.wet=c.wetG; e.fd=c.fdG; e.kcal=c.actual;
+    e.dn=c.df.n; e.wn=c.wetG>0?c.wf.n:''; e.fn=c.fdG>0?c.ff.n:'';
+    e.meals=meals.filter(function(m){return !m.skip;}).length;
+    saveH();
+
+    document.getElementById('ageText').textContent =
+      (c.weeks==null?'出生日期未填':(c.weeks.toFixed(1)+' 周 · '+c.months.toFixed(1)+' 个月'));
+    document.getElementById('sWeight').innerHTML=c.w.toFixed(2)+'<small>kg</small>';
+    document.getElementById('sWeightLbl').textContent=c.est?'推算重量':'实测重量';
+    document.getElementById('sKcal').textContent=c.kcal;
+    document.getElementById('sDry').textContent=c.dryG;
+    document.getElementById('sWet').textContent=c.wetG;
+
+    fillSelects();
+    document.getElementById('kcDry').textContent=c.df.k+' kcal';
+    document.getElementById('kcWet').textContent=c.wetG>0?(c.wf.k+' kcal'):'未启用';
+    document.getElementById('kcFd').textContent=c.fdG>0?(c.ff.k+' kcal'):'未启用';
+    document.getElementById('fdInput').value=c.fdG;
+    document.getElementById('fdHint').innerHTML = c.fdG>0
+      ? ('冻干每天 · 约 '+Math.round(c.fdG/1.5)+' 颗<span style="font-size:11px">　按每颗 1.5 g 估</span>')
+      : ('冻干每天 · 计入热量<span style="font-size:11px">　1 颗约 1.5 g</span>');
+    var note=document.getElementById('foodNote');
+    if(c.wetG>0 && Number(c.wf.k)<70){
+      note.innerHTML='<span style="color:var(--amber)">这款热量只有 '+c.wf.k+' kcal/100 g，多半是汤罐。热量靠份量补会把胃撑大而蛋白不够，建议换主食罐，或只当加餐。</span>';
+    }else{
+      note.textContent='换粮、换罐头时在上面的下拉里选一下，克数会跟着重算。';
+    }
+
+    var box=document.getElementById('phaseBox');
+    if(!c.wetOn){
+      box.innerHTML='<div class="info"><b>还没到罐头期</b>　还有 '+Math.abs(c.day)+' 天（'+S.wetStart+' 起），在那之前只喂干粮。</div>';
+    }else if(c.day<4){
+      box.innerHTML='<div class="info"><b>罐头引入第 '+(c.day+1)+' 天</b>　每天 20 g 起步，观察 48 小时，没问题再往上加。</div>';
+    }else{
+      var dv=daysSince('2026-11-15');
+      if(dv!=null && dv>=0 && dv<=7){
+        box.innerHTML='<div class="info"><b>疫苗后应答期</b>　打针后 3–7 天肠道最敏感，不引入任何新食物。</div>';
+      }else{ box.innerHTML=''; }
+    }
+
+    var now=new Date(), mins=now.getHours()*60+now.getMinutes(), idx=-1;
+    meals.forEach(function(m,i){
+      if(m.skip) return;
+      var p=m.time.split(':'), t=(+p[0])*60+(+p[1]);
+      if(mins>=t-30 && mins<t+150) idx=i;
+    });
+
+    var html='';
+    meals.forEach(function(m,i){
+      if(m.skip) return;
+      var on=!!e.ids[m.id];
+      var amt;
+      if(m.fd>0) amt='<b>'+m.fd+'</b><i>g 冻干</i>';
+      else if(m.wet>0&&m.dry>0) amt='<b>'+m.wet+'</b><i>g 罐</i> + <b>'+m.dry+'</b><i>g 粮</i>';
+      else if(m.wet>0) amt='<b>'+m.wet+'</b><i>g 罐</i>';
+      else amt='<b>'+m.dry+'</b><i>g 粮</i>';
+      html+='<div class="meal'+(i===idx?' now':'')+(on?' done':'')+'">'+
+        '<div class="time">'+m.time+'</div>'+
+        '<div class="what"><div class="name">'+m.name+(i===idx?'<span class="tag">现在</span>':'')+'</div>'+
+        '<div class="desc">'+m.desc+'</div></div>'+
+        '<div class="amt">'+amt+'</div>'+
+        '<button class="tick'+(on?' on':'')+'" data-m="'+m.id+'" type="button">✓</button>'+
+      '</div>';
+    });
+    document.getElementById('mealList').innerHTML=html;
+
+    var d=new Date();
+    document.getElementById('todayText').textContent=(d.getMonth()+1)+' 月 '+d.getDate()+' 日';
+    var total=meals.filter(function(m){return !m.skip;});
+    var doneN=total.filter(function(m){return e.ids[m.id];}).length;
+    document.getElementById('doneText').textContent=doneN+' / '+total.length+' 餐';
+    var parts=['干粮 '+c.dryG+' g'];
+    if(c.wetG>0) parts.push('湿粮 '+c.wetG+' g');
+    if(c.fdG>0) parts.push('冻干 '+c.fdG+' g');
+    document.getElementById('totalText').textContent = parts.join(' + ')+' ≈ '+c.actual+' kcal';
+
+    document.getElementById('treatCount').textContent=(localStorage.getItem(weekKey())||0)+'/1';
+
+    bindTicks(e);
+    renderGrowth(c);
+    renderHist();
+    renderWeight();
+  }
+
+  function renderGrowth(c){
+    var mCur=c.months||4.5;
+    var dk=(Number(c.df.k)||400)/100, wk=(Number(c.wf.k)||100)/100;
+    var stages=[{n:'4–6 月',m:5,weeks:22},{n:'6–9 月',m:7.5,weeks:33},{n:'9–12 月',m:10.5,weeks:46}];
+    var body='';
+    stages.forEach(function(st){
+      var w=Math.max(1.2, c.w+(st.m-mCur)*0.3);
+      var k=70*Math.pow(w,0.75)*factor(st.weeks);
+      var pct=autoWet(st.weeks);
+      var wg=Math.round(k*pct/100/wk/5)*5;
+      var dg=Math.round((k-wg*wk)/dk);
+      var n=st.weeks>=26?3:4;
+      var isNow=Math.abs(mCur-st.m)<=1.5;
+      body+='<tr'+(isNow?' class="now-row"':'')+'><td>'+st.n+'</td><td>'+w.toFixed(1)+'kg</td>'+
+        '<td class="c">'+Math.round(k)+'</td><td class="c">'+dg+'g</td><td class="c">'+wg+'g</td><td class="c">'+n+'</td></tr>';
+    });
+    document.getElementById('growthBody').innerHTML=body;
+
+    var ratio='';
+    [[4,6,15],[6,9,25],[9,12,33]].forEach(function(r){
+      var k=70*Math.pow(c.w,0.75)*2.0;
+      ratio+='<tr><td>'+r[0]+'–'+r[1]+' 月</td><td class="c">'+r[2]+'%</td><td class="c">'+
+        Math.round(k*r[2]/100/wk)+' g</td></tr>';
+    });
+    document.getElementById('ratioBody').innerHTML=ratio;
+  }
+
+  function renderHist(){
+    var keys=Object.keys(H).sort().reverse().slice(0,14);
+    if(!keys.length){
+      document.getElementById('histList').innerHTML='<div class="note" style="margin:0">还没有记录。今天勾选后会开始累积。</div>';
+    }else{
+      var html='';
+      keys.forEach(function(k){
+        var v=H[k]||{}, ids=v.ids||{}, n=v.meals||4;
+        var done=Object.keys(ids).length;
+        var pct=n?Math.min(100,Math.round(done/n*100)):0;
+        var dt=parseD(k), wk=['日','一','二','三','四','五','六'][dt.getDay()];
+        html+='<div class="hist"><div class="d">'+(dt.getMonth()+1)+'/'+dt.getDate()+'<small>周'+wk+'</small></div>'+
+          '<div class="bar"><i style="width:'+pct+'%"></i></div>'+
+          '<div class="v">'+done+'/'+n+' 餐 · '+(v.dry||0)+'g</div></div>';
+      });
+      document.getElementById('histList').innerHTML=html;
+    }
+    var all=Object.keys(H).map(function(k){
+      var v=H[k]||{}; return {done:Object.keys(v.ids||{}).length,n:v.meals||4};
+    });
+    var days=all.length;
+    var full=all.filter(function(x){return x.n>0 && x.done>=x.n;}).length;
+    var last7=all.slice(-7);
+    var avg=last7.length?(last7.reduce(function(a,x){return a+x.done;},0)/last7.length).toFixed(1):'—';
+    document.getElementById('histStats').innerHTML =
+      '已记录 <b>'+days+'</b> 天　·　全勤 <b>'+full+'</b> 天<br>近 7 天平均完成 <b>'+avg+'</b> 餐/天';
+  }
+
+  function renderWeight(){
+    var log=(S.weightLog||[]).slice().sort(function(a,b){ return a.d<b.d?1:-1; }).slice(0,8);
+    if(!log.length){
+      document.getElementById('weightList').innerHTML='<div class="note" style="margin:0">还没有记录。</div>';
+      return;
+    }
+    var html='';
+    log.forEach(function(x,i){
+      var prev=log[i+1], dd='';
+      if(prev){ var diff=x.kg-prev.kg; dd=(diff>=0?'+':'')+diff.toFixed(2)+' kg'; }
+      html+='<div class="hist"><div class="d">'+x.d.slice(5).replace('-','/')+'</div>'+
+        '<div class="bar" style="background:transparent"></div>'+
+        '<div class="v">'+x.kg.toFixed(2)+' kg '+(dd?'· '+dd:'')+'</div></div>';
+    });
+    document.getElementById('weightList').innerHTML=html;
+  }
+
+  function renderFoods(){
+    var box=document.getElementById('foodList');
+    var html='';
+    S.foods.forEach(function(f){
+      html+='<div class="food" data-id="'+f.id+'">'+
+        '<div class="l1"><input class="nm" type="text" value="'+f.n.replace(/"/g,'&quot;')+'">'+
+        '<button class="del" type="button" aria-label="删除">×</button></div>'+
+        '<div class="l2"><input class="kj" type="number" min="20" max="600" value="'+f.k+'"><span>kcal / 100 g</span>'+
+        '<select class="tp"><option value="dry"'+(f.t==='dry'?' selected':'')+'>干粮</option>'+
+        '<option value="wet"'+(f.t==='wet'?' selected':'')+'>湿粮</option>'+
+        '<option value="fd"'+(f.t==='fd'?' selected':'')+'>冻干</option></select></div>'+
+      '</div>';
+    });
+    box.innerHTML=html;
+    document.getElementById('foodCount').textContent=S.foods.length+' 项';
+
+    Array.prototype.forEach.call(box.querySelectorAll('.food'),function(row){
+      var id=row.getAttribute('data-id');
+      var f=foodById(id); if(!f) return;
+      row.querySelector('.nm').onchange=function(){ f.n=this.value.trim()||'未命名'; saveS(); render(); renderFoods(); };
+      row.querySelector('.kj').onchange=function(){
+        var v=Number(this.value); if(!v||v<20) { this.value=f.k; return; }
+        f.k=v; saveS(); render();
+      };
+      row.querySelector('.tp').onchange=function(){
+        var nt=this.value;
+        if(f.t==='dry' && nt!=='dry'){
+          var drys=S.foods.filter(function(x){return x.t==='dry';});
+          if(drys.length<=1){ alert('至少要留一款干粮'); this.value='dry'; return; }
+        }
+        if(f.t==='wet' && nt!=='wet'){
+          var wets=S.foods.filter(function(x){return x.t==='wet';});
+          if(wets.length<=1){ alert('至少要留一款湿粮；暂时不喂可以把“罐头启用日”往后调'); this.value='wet'; return; }
+        }
+        f.t=nt; saveS(); render(); renderFoods();
+      };
+      row.querySelector('.del').onclick=function(){
+        if(S.foods.length<=1){ alert('至少留一项'); return; }
+        if(f.t==='dry' && S.foods.filter(function(x){return x.t==='dry';}).length<=1){ alert('至少要留一款干粮'); return; }
+        if(f.t==='wet' && S.foods.filter(function(x){return x.t==='wet';}).length<=1){ alert('至少要留一款湿粮'); return; }
+        if(!confirm('删除「'+f.n+'」？')) return;
+        S.foods=S.foods.filter(function(x){ return x.id!==id; });
+        saveS(); render(); renderFoods(); bindSettings();
+      };
+    });
+  }
+
+  function bindTicks(e){
+    Array.prototype.forEach.call(document.querySelectorAll('.tick'),function(b){
+      b.onclick=function(){
+        var id=b.getAttribute('data-m');
+        if(e.ids[id]) delete e.ids[id]; else e.ids[id]=1;
+        saveH();
+        b.classList.toggle('on',!!e.ids[id]);
+        if(b.parentNode) b.parentNode.classList.toggle('done',!!e.ids[id]);
+        var meals=split(compute()).filter(function(m){return !m.skip;});
+        var doneN=meals.filter(function(m){return e.ids[m.id];}).length;
+        document.getElementById('doneText').textContent=doneN+' / '+meals.length+' 餐';
+      };
+    });
+  }
+
+  function bindSettings(){
+    document.getElementById('inBirth').value=S.birth;
+    document.getElementById('inWetStart').value=S.wetStart;
+    document.getElementById('inLunch').checked=!!S.lunch;
+
+    var lw=lastW();
+    document.getElementById('inWeight').value=lw?lw.kg:1.8;
+    document.getElementById('weightHint').textContent =
+      lw ? ('上次 '+lw.d+' 实测，'+(daysSince(lw.d)||0)+' 天前') : '每周称一次，改了会记一条';
+
+    var pct=(S.wetPct==null)?autoWet(weeksOf()):S.wetPct;
+    document.getElementById('inWetPct').value=pct;
+    document.getElementById('wetPctText').textContent=pct+'%';
+
+    document.getElementById('inBirth').onchange=function(){ S.birth=this.value||D.birth; saveS(); render(); bindSettings(); };
+    document.getElementById('inWetStart').onchange=function(){ S.wetStart=this.value||D.wetStart; saveS(); render(); };
+    document.getElementById('inLunch').onchange=function(){ S.lunch=this.checked; saveS(); render(); };
+    document.getElementById('inWetPct').oninput=function(){
+      S.wetPct=Number(this.value); saveS();
+      document.getElementById('wetPctText').textContent=this.value+'%';
+      render();
+    };
+    document.getElementById('btnAuto').onclick=function(){
+      S.wetPct=null; saveS();
+      var p=autoWet(weeksOf());
+      document.getElementById('inWetPct').value=p;
+      document.getElementById('wetPctText').textContent=p+'%';
+      render();
+    };
+
+    var sd=document.getElementById('selDry'), sw=document.getElementById('selWet'), sf=document.getElementById('selFd');
+    sd.onchange=function(){ S.dryId=this.value; saveS(); render(); };
+    sw.onchange=function(){ S.wetId=this.value; saveS(); render(); };
+    sf.onchange=function(){ S.fdId=this.value; saveS(); render(); };
+
+    document.getElementById('fdInput').onchange=function(){
+      var v=Number(this.value);
+      if(isNaN(v)||v<0) v=0;
+      if(v>30) v=30;
+      S.fdG=Math.round(v); saveS(); render();
+    };
+
+    document.getElementById('btnAddFood').onclick=function(){
+      var id='f'+Date.now();
+      S.foods.push({id:id,n:'新食物',t:'wet',k:100});
+      saveS(); renderFoods(); render();
+      var box=document.getElementById('foodList');
+      var last=box.lastElementChild;
+      if(last){ last.scrollIntoView({block:'center'}); var inp=last.querySelector('.nm'); if(inp){ inp.focus(); inp.select(); } }
+    };
+
+    document.getElementById('btnExport').onclick=function(){
+      var lines=['日期,干粮,湿粮,冻干,合计g,kcal,完成,总餐'];
+      Object.keys(H).sort().forEach(function(k){
+        var v=H[k]||{};
+        lines.push([k,v.dn||'',v.wn||'',v.fn||'',(v.dry||0)+'/'+(v.wet||0)+'/'+(v.fd||0),v.kcal||'',Object.keys(v.ids||{}).length,v.meals||''].join(','));
+      });
+      var txt=lines.join('\n');
+      if(navigator.clipboard&&navigator.clipboard.writeText){
+        navigator.clipboard.writeText(txt).then(function(){ alert('已复制到剪贴板'); },function(){ alert(txt); });
+      }else{ alert(txt); }
+    };
+    document.getElementById('btnReset').onclick=function(){
+      if(confirm('恢复默认设置？食物库和喂食记录都会清空。')){
+        S=clone(D); H={}; saveS(); saveH(); bindSettings(); render(); renderFoods();
+      }
+    };
+
+    document.getElementById('treatPlus').onclick=function(){
+      var t=Math.min(1,Number(localStorage.getItem(weekKey())||0)+1);
+      localStorage.setItem(weekKey(),t);
+      document.getElementById('treatCount').textContent=t+'/1';
+    };
+    document.getElementById('treatMinus').onclick=function(){
+      var t=Math.max(0,Number(localStorage.getItem(weekKey())||0)-1);
+      localStorage.setItem(weekKey(),t);
+      document.getElementById('treatCount').textContent=t+'/1';
+    };
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('nav button'),function(b){
+    b.onclick=function(){
+      Array.prototype.forEach.call(document.querySelectorAll('nav button'),function(x){x.classList.remove('on');});
+      b.classList.add('on');
+      var t=b.getAttribute('data-tab');
+      ['today','hist','growth','set'].forEach(function(k){
+        document.getElementById('tab-'+k).classList.toggle('hide',k!==t);
+      });
+      var names={today:'今日喂食',hist:'喂食记录',growth:'成长配比',set:'设置'};
+      document.getElementById('title').textContent=names[t];
+      if(t==='hist'){ renderHist(); renderWeight(); }
+      if(t==='set'){ renderFoods(); }
+      window.scrollTo({top:0,behavior:'smooth'});
+    };
+  });
+
+  bindSettings();
+  renderFoods();
+  render();
+})();
+</script>
+</body>
+</html>
