@@ -148,6 +148,12 @@
   .food .l3 label{font-size:11px;color:var(--sub);white-space:nowrap}
   .food .l3 input[type=date]{width:0;flex:1 1 96px;min-width:96px;padding:5px 6px;font-size:12px;text-align:left;border-radius:7px}
   .food .l3 input[type=number]{width:48px;padding:5px 6px;font-size:12px;text-align:center;border-radius:7px}
+  .food .l4{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}
+  .food .l4 label{font-size:11px;color:var(--sub);white-space:nowrap}
+  .food .l4 input{width:58px;padding:5px 6px;font-size:12px;text-align:right;border:1px solid var(--line);border-radius:7px;background:#fff;color:var(--ink);font-family:inherit}
+  .food .l4 .u{font-size:11px;color:var(--sub)}
+  .food .l4 .lf{font-size:11.5px;color:var(--sub);margin-left:auto;white-space:nowrap;font-variant-numeric:tabular-nums}
+  .food .l4 .lf.low{color:var(--amber);font-weight:500}
   .st{font-size:11px;padding:1px 7px;border-radius:5px;white-space:nowrap;font-weight:500}
   .st.ok{background:#e8f0ea;color:#2f5d43}
   .st.warn{background:#f7efdf;color:#8a6a2f}
@@ -337,7 +343,7 @@
       <h2><span>食物库</span><em id="foodCount">0 项</em></h2>
       <div id="foodList"></div>
       <button class="btn" type="button" id="btnAddFood">＋ 添加食物</button>
-      <p class="note">热量填包装背面的 kcal/100 g：干粮 380–420，主食罐 90–110，浓汤罐 40–60，冻干 350–400。<br>「到期」填包装上的保质期至；「开封」填开封那天，右边格子填开封后可用天数（膨化粮 30、烘焙 21、冻干 14）。两个都填时，取更早的那个报警。</p>
+      <p class="note">热量填包装背面的 kcal/100 g：干粮 380–420，主食罐 90–110，浓汤罐 40–60，冻干 350–400。<br>「到期」填包装上的保质期至。「开封」只填<strong>正在吃的那一件</strong>——每袋每罐的开封日不一样，吃完开新的一件时把日期改过来；右边格子填开封后可用天数（膨化粮 30、烘焙 21、冻干 14、罐头 2）。<br>「入库」填单个克数 × 件数（85 g × 6 件），总数自动算。填完当作今天清点，从明天起按每天配比自动扣；只有打开过并留下记录的日子才扣。</p>
     </div>
 
     <div class="card">
@@ -354,7 +360,7 @@
       <h2>数据</h2>
       <button class="btn" type="button" id="btnExport">导出记录（复制文本）</button>
       <button class="btn" type="button" id="btnReset">恢复默认设置</button>
-      <p class="note">数据只存在这台设备，不上传。换设备需要重新填。<br><span style="color:#a8a69c">版本 2026-11-08c</span></p>
+      <p class="note">数据只存在这台设备，不上传。换设备需要重新填。<br><span style="color:#a8a69c">版本 2026-11-08e</span></p>
     </div>
   </section>
 
@@ -442,6 +448,29 @@
     var cls = eff<0?'bad':(eff<=30?'warn':'ok');
     var txt = eff<0 ? (base+'超 '+Math.abs(eff)+' 天') : (base+'剩 '+eff+' 天');
     return {eff:eff,cls:cls,txt:txt,base:base};
+  }
+
+  function foodLeft(f){
+    var unitG=Number(f.unitG)||0, units=Number(f.units)||0;
+    var total=unitG*units;
+    if(total<=0) total=Number(f.stock)||0;
+    if(total<=0) return null;
+    var from=f.stockFrom||'';
+    var used=0, days=0;
+    Object.keys(H).forEach(function(k){
+      if(from && k<=from) return;
+      var v=H[k]||{};
+      var amt=0;
+      if(v.did===f.id) amt+=Number(v.dry)||0;
+      if(v.wid===f.id) amt+=Number(v.wet)||0;
+      if(v.fid===f.id) amt+=Number(v.fd)||0;
+      if(amt>0){ used+=amt; days++; }
+    });
+    var left=Math.max(0, total-used);
+    var rate=days>0?used/days:0;
+    return {total:Math.round(total), used:Math.round(used), left:Math.round(left),
+            unitLeft:unitG>0?left/unitG:null,
+            days:rate>0?Math.floor(left/rate):null};
   }
 
   function lastW(){
@@ -564,7 +593,7 @@
     sd.innerHTML=dOpt; sw.innerHTML=wOpt; sf.innerHTML=fOpt;
     sd.value=S.dryId; sw.value=S.wetId; sf.value=S.fdId;
     sw.disabled=!wetOn();
-    sf.disabled=false;
+    sf.disabled=!(Number(S.fdG)>0);
   }
 
   function normalize(){
@@ -590,6 +619,7 @@
     var c=compute(), meals=split(c), e=entry();
     e.dry=c.dryG; e.wet=c.wetG; e.fd=c.fdG; e.kcal=c.actual;
     e.dn=c.df.n; e.wn=c.wetG>0?c.wf.n:''; e.fn=c.fdG>0?c.ff.n:'';
+    e.did=c.df.id||''; e.wid=c.wetG>0?(c.wf.id||''):''; e.fid=c.fdG>0?(c.ff.id||''):'';
     e.meals=meals.filter(function(m){return !m.skip;}).length;
     saveH();
 
@@ -608,7 +638,7 @@
     document.getElementById('fdInput').value=c.fdG;
     document.getElementById('fdHint').innerHTML = c.fdG>0
       ? ('冻干每天 · 约 '+Math.round(c.fdG/1.5)+' 颗<span style="font-size:11px">　按每颗 1.5 g 估</span>')
-      : ('冻干每天 · 计入热量<span style="font-size:11px">　1 颗约 1.5 g</span>');
+      : ('冻干每天 · 填 0 表示不喂<span style="font-size:11px">　填了克数才能选</span>');
     var note=document.getElementById('foodNote');
     var warns=[];
     if(foodStatus(c.df).cls==='bad') warns.push('干粮「'+c.df.n+'」已过保质期');
@@ -774,7 +804,7 @@
     var box=document.getElementById('foodList');
     var html='';
     S.foods.forEach(function(f){
-      var st=foodStatus(f);
+      var st=foodStatus(f), lf=foodLeft(f);
       html+='<div class="food" data-id="'+f.id+'">'+
         '<div class="l1"><input class="nm" type="text" value="'+String(f.n).replace(/"/g,'&quot;')+'">'+
         '<button class="del" type="button" aria-label="删除">×</button></div>'+
@@ -786,6 +816,11 @@
         '<label>开封</label><input class="opn" type="date" value="'+(f.open||'')+'">'+
         '<input class="life" type="number" min="0" max="180" step="1" placeholder="天" value="'+(Number(f.life)>0?f.life:'')+'">'+
         (st.txt?'<span class="st '+st.cls+'">'+st.txt+'</span>':'')+
+        '</div>'+
+        '<div class="l4"><label>入库</label>'+
+        '<input class="ug" type="number" min="0" step="5" placeholder="g" value="'+(Number(f.unitG)>0?f.unitG:'')+'"><span class="u">g ×</span>'+
+        '<input class="un" type="number" min="0" step="1" placeholder="件" value="'+(Number(f.units)>0?f.units:'')+'"><span class="u">件</span>'+
+        (lf?'<span class="lf'+((lf.days!=null&&lf.days<=3)?' low':'')+'">剩 '+lf.left+' g'+(lf.unitLeft!=null?' · '+lf.unitLeft.toFixed(1)+' 件':'')+(lf.days!=null?' · 约 '+lf.days+' 天':'')+'</span>':'')+
         '</div>'+
       '</div>';
     });
@@ -817,6 +852,20 @@
       row.querySelector('.life').onchange=function(){
         var v=Number(this.value);
         f.life=(isNaN(v)||v<0)?0:Math.min(180,Math.round(v));
+        saveS(); render(); renderFoods();
+      };
+      row.querySelector('.ug').onchange=function(){
+        var v=Number(this.value);
+        if(isNaN(v)||v<0) v=0;
+        f.unitG=Math.round(v);
+        f.stockFrom=today();
+        saveS(); render(); renderFoods();
+      };
+      row.querySelector('.un').onchange=function(){
+        var v=Number(this.value);
+        if(isNaN(v)||v<0) v=0;
+        f.units=Math.round(v);
+        f.stockFrom=today();
         saveS(); render(); renderFoods();
       };
       row.querySelector('.del').onclick=function(){
