@@ -99,14 +99,21 @@
   .info{background:var(--blue-bg);border:1px solid #d5dfea;border-radius:12px;padding:11px 13px;font-size:12.5px;color:var(--blue);line-height:1.65;margin:14px 0}
   .tag{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:5px;background:var(--amber-bg);color:var(--amber);margin-left:5px;vertical-align:1px}
 
-  .field{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+  .field{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 0;border-bottom:1px solid var(--line)}
   .field:last-of-type{border-bottom:none}
-  .field label{font-size:14px}
-  .field .hint{display:block;font-size:11.5px;color:var(--sub);margin-top:2px}
+  .field label{font-size:14px;flex:1 1 auto;min-width:0}
+  .field .hint{display:block;font-size:11.5px;color:var(--sub);margin-top:2px;line-height:1.4}
   input[type=date],input[type=number]{
     border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:14px;
-    font-family:inherit;color:var(--ink);background:#fff;text-align:right;width:134px
+    font-family:inherit;color:var(--ink);background:#fff;text-align:right;width:128px;flex:0 0 auto
   }
+  .wgrp{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+  .wgrp button{
+    width:32px;height:36px;border:1px solid var(--line);background:#fff;border-radius:9px;
+    font-size:17px;line-height:1;color:var(--ink);padding:0;cursor:pointer;font-family:inherit;flex:0 0 auto
+  }
+  .wgrp button:active{background:#f0eee8}
+  .wgrp input[type=number]{width:72px;text-align:center}
   input[type=range]{width:100%;accent-color:var(--green)}
   input[type=checkbox]{width:24px;height:24px;accent-color:#2f5d43}
   .slider{padding:12px 0;border-bottom:1px solid var(--line)}
@@ -293,7 +300,11 @@
       </div>
       <div class="field">
         <label>实测体重<span class="hint" id="weightHint">每周称一次，改了会记一条</span></label>
-        <input type="number" id="inWeight" step="0.05" min="0.5" max="8">
+        <div class="wgrp">
+          <button type="button" id="wMinus">−</button>
+          <input type="number" id="inWeight" inputmode="decimal" step="0.05" min="0.5" max="8">
+          <button type="button" id="wPlus">+</button>
+        </div>
       </div>
       <div class="field">
         <label>每天喂午餐<span class="hint">家里没人就关掉，热量并入早晚</span></label>
@@ -326,7 +337,7 @@
       <h2>数据</h2>
       <button class="btn" type="button" id="btnExport">导出记录（复制文本）</button>
       <button class="btn" type="button" id="btnReset">恢复默认设置</button>
-      <p class="note">数据只存在这台设备，不上传。换设备需要重新填。</p>
+      <p class="note">数据只存在这台设备，不上传。换设备需要重新填。<br><span style="color:#a8a69c">版本 2026-11-08 · 修体重保存</span></p>
     </div>
   </section>
 
@@ -765,7 +776,7 @@
     document.getElementById('inLunch').checked=!!S.lunch;
 
     var lw=lastW();
-    document.getElementById('inWeight').value=lw?lw.kg:1.8;
+    document.getElementById('inWeight').value = lw?Number(lw.kg).toFixed(2):'1.80';
     document.getElementById('weightHint').textContent =
       lw ? ('上次 '+lw.d+' 实测，'+(daysSince(lw.d)||0)+' 天前') : '每周称一次，改了会记一条';
 
@@ -776,6 +787,39 @@
     document.getElementById('inBirth').onchange=function(){ S.birth=this.value||D.birth; saveS(); render(); bindSettings(); };
     document.getElementById('inWetStart').onchange=function(){ S.wetStart=this.value||D.wetStart; saveS(); render(); };
     document.getElementById('inLunch').onchange=function(){ S.lunch=this.checked; saveS(); render(); };
+
+    function setWeight(v,rebind){
+      var kg=Math.round(Number(v)*100)/100;
+      if(isNaN(kg)||kg<=0) return;
+      if(kg<0.5) kg=0.5;
+      if(kg>8) kg=8;
+      S.weightLog=S.weightLog||[];
+      var d=today(), hit=null;
+      S.weightLog.forEach(function(x){ if(x.d===d) hit=x; });
+      if(hit) hit.kg=kg; else S.weightLog.push({d:d,kg:kg});
+      saveS();
+      if(rebind) bindSettings();
+      render();
+      renderWeight();
+    }
+    var wIn=document.getElementById('inWeight'), wtimer=null;
+    wIn.oninput=function(){
+      var v=this.value;
+      if(wtimer) clearTimeout(wtimer);
+      wtimer=setTimeout(function(){ setWeight(v,false); },700);
+    };
+    wIn.onblur=function(){
+      if(wtimer) clearTimeout(wtimer);
+      if(!this.value){ bindSettings(); return; }
+      setWeight(this.value,true);
+    };
+    wIn.onkeydown=function(e){ if(e.key==='Enter'){ this.blur(); } };
+    document.getElementById('wMinus').onclick=function(){
+      setWeight((Number(wIn.value)||1.8)-0.05,true);
+    };
+    document.getElementById('wPlus').onclick=function(){
+      setWeight((Number(wIn.value)||1.8)+0.05,true);
+    };
     document.getElementById('inWetPct').oninput=function(){
       S.wetPct=Number(this.value); saveS();
       document.getElementById('wetPctText').textContent=this.value+'%';
