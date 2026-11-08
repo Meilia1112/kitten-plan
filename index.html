@@ -144,6 +144,17 @@
     font-size:13px;font-family:inherit;background:#fff;color:var(--ink)
   }
   .food .l2 span{font-size:11.5px;color:var(--sub)}
+  .food .l3{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}
+  .food .l3 label{font-size:11px;color:var(--sub);white-space:nowrap}
+  .food .l3 input[type=date]{width:0;flex:1 1 96px;min-width:96px;padding:5px 6px;font-size:12px;text-align:left;border-radius:7px}
+  .food .l3 input[type=number]{width:48px;padding:5px 6px;font-size:12px;text-align:center;border-radius:7px}
+  .st{font-size:11px;padding:1px 7px;border-radius:5px;white-space:nowrap;font-weight:500}
+  .st.ok{background:#e8f0ea;color:#2f5d43}
+  .st.warn{background:#f7efdf;color:#8a6a2f}
+  .st.bad{background:#fbeeec;color:#8a3531}
+  .ex{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;align-items:center}
+  .ex:last-child{border-bottom:none}
+  .ex .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
   .hist{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
   .hist:last-child{border-bottom:none}
@@ -218,6 +229,12 @@
         </div>
       </div>
       <p class="note" id="foodNote"></p>
+    </div>
+
+    <div class="card" id="expCard" style="display:none">
+      <h2><span>保质期提醒</span><em>30 天内</em></h2>
+      <div id="expList"></div>
+      <p class="note">按到期日和开封后天数算，先到先算。数据在「设置 → 食物库」里填。</p>
     </div>
 
     <div class="card">
@@ -320,7 +337,7 @@
       <h2><span>食物库</span><em id="foodCount">0 项</em></h2>
       <div id="foodList"></div>
       <button class="btn" type="button" id="btnAddFood">＋ 添加食物</button>
-      <p class="note">热量填包装背面的 kcal/100 g。干粮一般 380–420，主食罐 90–110，浓汤罐只有 40–60，冻干 350–400。名字可以直接改，改完自动保存。</p>
+      <p class="note">热量填包装背面的 kcal/100 g：干粮 380–420，主食罐 90–110，浓汤罐 40–60，冻干 350–400。<br>「到期」填包装上的保质期至；「开封」填开封那天，右边格子填开封后可用天数（膨化粮 30、烘焙 21、冻干 14）。两个都填时，取更早的那个报警。</p>
     </div>
 
     <div class="card">
@@ -337,7 +354,7 @@
       <h2>数据</h2>
       <button class="btn" type="button" id="btnExport">导出记录（复制文本）</button>
       <button class="btn" type="button" id="btnReset">恢复默认设置</button>
-      <p class="note">数据只存在这台设备，不上传。换设备需要重新填。<br><span style="color:#a8a69c">版本 2026-11-08 · 修体重保存</span></p>
+      <p class="note">数据只存在这台设备，不上传。换设备需要重新填。<br><span style="color:#a8a69c">版本 2026-11-08c</span></p>
     </div>
   </section>
 
@@ -414,6 +431,19 @@
   function wetFood(){ var f=foodById(S.wetId); if(!f||f.t!=='wet') f=S.foods.filter(function(x){return x.t==='wet';})[0]; return f||{k:100,n:'湿粮'}; }
   function fdFood(){ var f=foodById(S.fdId); if(!f||f.t!=='fd') f=S.foods.filter(function(x){return x.t==='fd';})[0]; return f||{k:380,n:'冻干'}; }
 
+  function foodStatus(f){
+    var eLeft=null, oLeft=null, isOpen=false, eff=null;
+    if(f.exp){ var d=daysSince(f.exp); if(d!=null) eLeft=-d; }
+    if(f.open && Number(f.life)>0){ var d2=daysSince(f.open); if(d2!=null) oLeft=Number(f.life)-d2; }
+    if(eLeft!=null) eff=eLeft;
+    if(oLeft!=null && (eff==null || oLeft<eff)){ eff=oLeft; isOpen=true; }
+    if(eff==null) return {eff:null,cls:'',txt:''};
+    var base=isOpen?'开封':'保质';
+    var cls = eff<0?'bad':(eff<=30?'warn':'ok');
+    var txt = eff<0 ? (base+'超 '+Math.abs(eff)+' 天') : (base+'剩 '+eff+' 天');
+    return {eff:eff,cls:cls,txt:txt,base:base};
+  }
+
   function lastW(){
     var log=(S.weightLog||[]).slice().sort(function(a,b){ return a.d<b.d?1:-1; });
     return log[0]||null;
@@ -459,7 +489,8 @@
     var df=DF(), wf=WF(), ff=FDF();
     var kcal=70*Math.pow(w,0.75)*factor(weeks);
     var fdG=Math.max(0,Number(S.fdG)||0);
-    var fdKcal=Math.min(kcal*0.4, fdG*((Number(ff.k)||380)/100));
+    var fdKcal=fdG*((Number(ff.k)||380)/100);
+    if(fdKcal>kcal){ fdKcal=kcal; }
     var rest=Math.max(0,kcal-fdKcal);
     var pct=(S.wetPct==null)?autoWet(weeks):Number(S.wetPct);
     var wetG=0;
@@ -476,8 +507,11 @@
   }
 
   function ratios(wet,lunch,n){
+    if(n===3){
+      return wet>0 ? [0.52,0,0.08,0.40] : [0.45,0,0.20,0.35];
+    }
     var r = wet>0 ? [0.42,0.20,0.08,0.30] : [0.35,0.20,0.15,0.30];
-    if(!lunch || n===3){ r[0]+=r[1]*0.5; r[3]+=r[1]*0.5; r[1]=0; }
+    if(!lunch){ r[0]+=r[1]*0.5; r[3]+=r[1]*0.5; r[1]=0; }
     return r;
   }
 
@@ -520,7 +554,9 @@
     var sd=document.getElementById('selDry'), sw=document.getElementById('selWet'), sf=document.getElementById('selFd');
     var dOpt='', wOpt='', fOpt='';
     S.foods.forEach(function(f){
-      var o='<option value="'+f.id+'">'+f.n+' · '+f.k+' kcal/100g</option>';
+      var st=foodStatus(f);
+      var mark = st.cls==='bad' ? '（已过期）' : (st.cls==='warn' ? '（'+st.txt+'）' : '');
+      var o='<option value="'+f.id+'">'+f.n+' · '+f.k+(mark?mark:'')+'</option>';
       if(f.t==='dry') dOpt+=o;
       else if(f.t==='wet') wOpt+=o;
       else fOpt+=o;
@@ -528,7 +564,7 @@
     sd.innerHTML=dOpt; sw.innerHTML=wOpt; sf.innerHTML=fOpt;
     sd.value=S.dryId; sw.value=S.wetId; sf.value=S.fdId;
     sw.disabled=!wetOn();
-    sf.disabled=!(Number(S.fdG)>0);
+    sf.disabled=false;
   }
 
   function normalize(){
@@ -574,7 +610,13 @@
       ? ('冻干每天 · 约 '+Math.round(c.fdG/1.5)+' 颗<span style="font-size:11px">　按每颗 1.5 g 估</span>')
       : ('冻干每天 · 计入热量<span style="font-size:11px">　1 颗约 1.5 g</span>');
     var note=document.getElementById('foodNote');
-    if(c.wetG>0 && Number(c.wf.k)<70){
+    var warns=[];
+    if(foodStatus(c.df).cls==='bad') warns.push('干粮「'+c.df.n+'」已过保质期');
+    if(c.wetG>0 && foodStatus(c.wf).cls==='bad') warns.push('湿粮「'+c.wf.n+'」已过保质期');
+    if(c.fdG>0 && foodStatus(c.ff).cls==='bad') warns.push('冻干「'+c.ff.n+'」已过保质期');
+    if(warns.length){
+      note.innerHTML='<span style="color:var(--red);font-weight:500">'+warns.join('；')+'，别喂了，换一袋。</span>';
+    }else if(c.wetG>0 && Number(c.wf.k)<70){
       note.innerHTML='<span style="color:var(--amber)">这款热量只有 '+c.wf.k+' kcal/100 g，多半是汤罐。热量靠份量补会把胃撑大而蛋白不够，建议换主食罐，或只当加餐。</span>';
     }else{
       note.textContent='换粮、换罐头时在上面的下拉里选一下，克数会跟着重算。';
@@ -634,6 +676,7 @@
     renderGrowth(c);
     renderHist();
     renderWeight();
+    renderExpBox();
   }
 
   function renderGrowth(c){
@@ -680,15 +723,16 @@
       });
       document.getElementById('histList').innerHTML=html;
     }
-    var all=Object.keys(H).map(function(k){
+    var allKeys=Object.keys(H).sort();
+    var all=allKeys.map(function(k){
       var v=H[k]||{}; return {done:Object.keys(v.ids||{}).length,n:v.meals||4};
     });
-    var days=all.length;
+    var days=all.filter(function(x){return x.done>0;}).length;
     var full=all.filter(function(x){return x.n>0 && x.done>=x.n;}).length;
     var last7=all.slice(-7);
     var avg=last7.length?(last7.reduce(function(a,x){return a+x.done;},0)/last7.length).toFixed(1):'—';
     document.getElementById('histStats').innerHTML =
-      '已记录 <b>'+days+'</b> 天　·　全勤 <b>'+full+'</b> 天<br>近 7 天平均完成 <b>'+avg+'</b> 餐/天';
+      '打卡 <b>'+days+'</b> 天　·　全勤 <b>'+full+'</b> 天<br>近 7 天平均完成 <b>'+avg+'</b> 餐/天';
   }
 
   function renderWeight(){
@@ -708,17 +752,41 @@
     document.getElementById('weightList').innerHTML=html;
   }
 
+  function renderExpBox(){
+    var card=document.getElementById('expCard'), list=document.getElementById('expList');
+    var items=[];
+    S.foods.forEach(function(f){
+      var st=foodStatus(f);
+      if(st.eff==null || st.eff>30) return;
+      items.push({f:f,st:st});
+    });
+    items.sort(function(a,b){ return a.st.eff-b.st.eff; });
+    if(!items.length){ card.style.display='none'; list.innerHTML=''; return; }
+    card.style.display='';
+    var html='';
+    items.forEach(function(it){
+      html+='<div class="ex"><div class="nm">'+it.f.n+'</div><span class="st '+it.st.cls+'">'+it.st.txt+'</span></div>';
+    });
+    list.innerHTML=html;
+  }
+
   function renderFoods(){
     var box=document.getElementById('foodList');
     var html='';
     S.foods.forEach(function(f){
+      var st=foodStatus(f);
       html+='<div class="food" data-id="'+f.id+'">'+
-        '<div class="l1"><input class="nm" type="text" value="'+f.n.replace(/"/g,'&quot;')+'">'+
+        '<div class="l1"><input class="nm" type="text" value="'+String(f.n).replace(/"/g,'&quot;')+'">'+
         '<button class="del" type="button" aria-label="删除">×</button></div>'+
         '<div class="l2"><input class="kj" type="number" min="20" max="600" value="'+f.k+'"><span>kcal / 100 g</span>'+
         '<select class="tp"><option value="dry"'+(f.t==='dry'?' selected':'')+'>干粮</option>'+
         '<option value="wet"'+(f.t==='wet'?' selected':'')+'>湿粮</option>'+
         '<option value="fd"'+(f.t==='fd'?' selected':'')+'>冻干</option></select></div>'+
+        '<div class="l3"><label>到期</label><input class="exp" type="date" value="'+(f.exp||'')+'">'+
+        '<label>开封</label><input class="opn" type="date" value="'+(f.open||'')+'">'+
+        '<input class="life" type="number" min="0" max="180" step="1" placeholder="天" value="'+(Number(f.life)>0?f.life:'')+'">'+
+        (st.txt?'<span class="st '+st.cls+'">'+st.txt+'</span>':'')+
+        '</div>'+
       '</div>';
     });
     box.innerHTML=html;
@@ -743,6 +811,13 @@
           if(wets.length<=1){ alert('至少要留一款湿粮；暂时不喂可以把“罐头启用日”往后调'); this.value='wet'; return; }
         }
         f.t=nt; saveS(); render(); renderFoods();
+      };
+      row.querySelector('.exp').onchange=function(){ f.exp=this.value||''; saveS(); render(); renderFoods(); };
+      row.querySelector('.opn').onchange=function(){ f.open=this.value||''; saveS(); render(); renderFoods(); };
+      row.querySelector('.life').onchange=function(){
+        var v=Number(this.value);
+        f.life=(isNaN(v)||v<0)?0:Math.min(180,Math.round(v));
+        saveS(); render(); renderFoods();
       };
       row.querySelector('.del').onclick=function(){
         if(S.foods.length<=1){ alert('至少留一项'); return; }
