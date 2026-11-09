@@ -221,17 +221,31 @@
         <div class="kc" id="kcWet">—</div>
       </div>
       <div class="pick">
-        <div class="lb">冻干</div>
+        <div class="lb">主食冻干</div>
         <select id="selFd"></select>
         <div class="kc" id="kcFd">—</div>
       </div>
-      <div class="pick" style="border-bottom:none">
+      <div class="pick">
         <div class="lb"></div>
         <div style="flex:1;font-size:12.5px;color:var(--sub)" id="fdHint">冻干每天 · 计入热量</div>
         <div style="display:flex;align-items:center;gap:4px">
-          <input type="number" id="fdInput" step="1" min="0" max="30" value="0"
-                 style="width:62px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:14px;text-align:right;font-family:inherit;background:#fff;color:var(--ink)">
-          <span style="font-size:12px;color:var(--sub)">g</span>
+          <input type="number" id="fdInput" step="1" min="0" max="20" value="0"
+                 style="width:58px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:14px;text-align:right;font-family:inherit;background:#fff;color:var(--ink)">
+          <span style="font-size:12px;color:var(--sub)">颗</span>
+        </div>
+      </div>
+      <div class="pick">
+        <div class="lb">洁齿冻干</div>
+        <select id="selCk"></select>
+        <div class="kc" id="kcCk">—</div>
+      </div>
+      <div class="pick" style="border-bottom:none">
+        <div class="lb"></div>
+        <div style="flex:1;font-size:12.5px;color:var(--sub)" id="ckHint">洁齿每天 · 计入热量</div>
+        <div style="display:flex;align-items:center;gap:4px">
+          <input type="number" id="ckInput" step="1" min="0" max="10" value="0"
+                 style="width:58px;border:1px solid var(--line);border-radius:8px;padding:7px 8px;font-size:14px;text-align:right;font-family:inherit;background:#fff;color:var(--ink)">
+          <span style="font-size:12px;color:var(--sub)">颗</span>
         </div>
       </div>
       <p class="note" id="foodNote"></p>
@@ -250,6 +264,7 @@
         <span>全天合计</span>
         <b id="totalText">—</b>
       </div>
+      <p class="note" id="pkgNote" style="display:none"></p>
     </div>
 
     <div class="card">
@@ -330,6 +345,14 @@
         </div>
       </div>
       <div class="field">
+        <label>成年预计体重<span class="hint">超重时按生长曲线封顶，避免越胖喂越多</span></label>
+        <div class="wgrp">
+          <button type="button" id="aMinus">−</button>
+          <input type="number" id="inAdult" inputmode="decimal" step="0.1" min="2" max="6">
+          <button type="button" id="aPlus">+</button>
+        </div>
+      </div>
+      <div class="field">
         <label>每天喂午餐<span class="hint">家里没人就关掉，热量并入早晚</span></label>
         <input type="checkbox" id="inLunch">
       </div>
@@ -343,7 +366,7 @@
       <h2><span>食物库</span><em id="foodCount">0 项</em></h2>
       <div id="foodList"></div>
       <button class="btn" type="button" id="btnAddFood">＋ 添加食物</button>
-      <p class="note">热量填包装背面的 kcal/100 g：干粮 380–420，主食罐 90–110，浓汤罐 40–60，冻干 350–400。<br>「到期」填包装上的保质期至。「开封」只填<strong>正在吃的那一件</strong>——每袋每罐的开封日不一样，吃完开新的一件时把日期改过来；右边格子填开封后可用天数（膨化粮 30、烘焙 21、冻干 14、罐头 2）。<br>「入库」填单个克数 × 件数（85 g × 6 件），总数自动算。填完当作今天清点，从明天起按每天配比自动扣；只有打开过并留下记录的日子才扣。</p>
+      <p class="note">热量填包装背面的 kcal/100 g：干粮 380–420，主食罐 90–110，浓汤罐 40–60，冻干 350–400。<br>冻干按颗喂，所以那一行先填「每颗多少 g」——称一次五颗除以五就行，之后只填颗数，克数系统自己算。主食冻干和洁齿冻干各设一次，两者大小通常不一样。<br>「到期」填包装上的保质期至。「开封」只填<strong>正在吃的那一件</strong>——每袋每罐的开封日不一样，吃完开新的一件时把日期改过来；右边格子填开封后可用天数（膨化粮 30、烘焙 21、冻干 14、罐头 2）。<br>「入库」填单个克数 × 件数（85 g × 6 件），总数自动算。填完当作今天清点，从明天起按每天配比自动扣；只有打开过并留下记录的日子才扣。</p>
     </div>
 
     <div class="card">
@@ -360,7 +383,7 @@
       <h2>数据</h2>
       <button class="btn" type="button" id="btnExport">导出记录（复制文本）</button>
       <button class="btn" type="button" id="btnReset">恢复默认设置</button>
-      <p class="note">数据只存在这台设备，不上传。换设备需要重新填。<br><span style="color:#a8a69c">版本 2026-11-08e</span></p>
+      <p class="note">数据只存在这台设备，不上传。换设备需要重新填。<br><span style="color:#a8a69c">版本 2026-11-09c</span></p>
     </div>
   </section>
 
@@ -378,10 +401,11 @@
   var SKEY='kitten-plan-v4', HKEY='kitten-hist-v4', OLD='kitten-plan-v3';
 
   var FOODS=[
-    {id:'d1',n:'冠能幼猫粮',t:'dry',k:400},
+    {id:'d1',n:'冠能幼猫粮',t:'dry',k:400,rmin:55,rmax:70},
     {id:'d2',n:'比乐鲜系列',t:'dry',k:390},
-    {id:'f1',n:'蓝氏主食冻干',t:'fd',k:380},
-    {id:'f2',n:'库卫鸡小胸冻干',t:'fd',k:390},
+    {id:'f1',n:'蓝氏主食冻干',t:'fd',k:380,pieceG:1.5},
+    {id:'f2',n:'库卫鸡小胸冻干',t:'fd',k:390,pieceG:1.5},
+    {id:'f3',n:'小毛豆洁齿冻干',t:'fd',k:390,pieceG:2},
     {id:'w1',n:'喵凡思主食罐',t:'wet',k:95},
     {id:'w2',n:'帕蓝姆幼猫罐',t:'wet',k:90},
     {id:'w3',n:'皇家 KLC 慕斯罐',t:'wet',k:100},
@@ -396,8 +420,8 @@
   var D={
     birth:'2026-06-22',
     weightLog:[{d:'2026-11-06',kg:1.8}],
-    lunch:true, wetPct:null, wetStart:'2026-11-23',
-    foods:FOODS, dryId:'d1', wetId:'w1', fdId:'f1', fdG:0
+    lunch:true, wetPct:null, wetStart:'2026-11-23', adultKg:3.5,
+    foods:FOODS, dryId:'d1', wetId:'w1', fdId:'f1', fdN:0, ckId:'f3', ckN:2
   };
 
   function clone(o){ return JSON.parse(JSON.stringify(o)); }
@@ -416,6 +440,26 @@
     }
   }
   if(!S.foods||!S.foods.length) S.foods=clone(FOODS);
+  if(S.fdN===undefined){
+    var pg0=1.5;
+    for(var i0=0;i0<S.foods.length;i0++){
+      if(S.foods[i0].id===S.fdId && Number(S.foods[i0].pieceG)>0){ pg0=Number(S.foods[i0].pieceG); break; }
+    }
+    S.fdN = Number(S.fdG)>0 ? Math.max(1,Math.round(Number(S.fdG)/pg0)) : 0;
+  }
+  if(S.ckN===undefined) S.ckN=2;
+  if(!S.ckId) S.ckId='f3';
+  if(S.adultKg===undefined) S.adultKg=3.5;
+  var ckOk=false;
+  if(S.foods){
+    for(var ic=0;ic<S.foods.length;ic++){
+      if(S.foods[ic].id===S.ckId && S.foods[ic].t==='fd'){ ckOk=true; break; }
+    }
+  }
+  if(!ckOk){
+    var fk0=S.foods?S.foods.filter(function(x){return x.t==='fd';}):[];
+    S.ckId=fk0.length>1?fk0[fk0.length-1].id:(fk0[0]?fk0[0].id:'');
+  }
   var H=load(HKEY,{});
 
   function saveS(){ try{ localStorage.setItem(SKEY,JSON.stringify(S)); }catch(e){} }
@@ -436,6 +480,14 @@
   function dryFood(){ var f=foodById(S.dryId); if(!f||f.t!=='dry') f=S.foods.filter(function(x){return x.t==='dry';})[0]; return f||{k:400,n:'干粮'}; }
   function wetFood(){ var f=foodById(S.wetId); if(!f||f.t!=='wet') f=S.foods.filter(function(x){return x.t==='wet';})[0]; return f||{k:100,n:'湿粮'}; }
   function fdFood(){ var f=foodById(S.fdId); if(!f||f.t!=='fd') f=S.foods.filter(function(x){return x.t==='fd';})[0]; return f||{k:380,n:'冻干'}; }
+  function ckFood(){
+    var f=foodById(S.ckId);
+    if(!f||f.t!=='fd'){
+      var l=S.foods.filter(function(x){return x.t==='fd';});
+      f = l.length>1 ? l[l.length-1] : l[0];
+    }
+    return f||{k:390,n:'洁齿冻干',pieceG:2};
+  }
 
   function foodStatus(f){
     var eLeft=null, oLeft=null, isOpen=false, eff=null;
@@ -464,6 +516,7 @@
       if(v.did===f.id) amt+=Number(v.dry)||0;
       if(v.wid===f.id) amt+=Number(v.wet)||0;
       if(v.fid===f.id) amt+=Number(v.fd)||0;
+      if(v.cid===f.id) amt+=Number(v.ck)||0;
       if(amt>0){ used+=amt; days++; }
     });
     var left=Math.max(0, total-used);
@@ -502,6 +555,22 @@
     if(w<52) return 1.9;
     return 1.6;
   }
+
+  // 生长曲线：各周龄体重占成年体重的比例（分段线性插值）
+  var CURVE=[[8,0.22],[12,0.33],[16,0.42],[20,0.50],[26,0.62],[32,0.72],[39,0.80],[46,0.90],[52,1.00]];
+  function curveRatio(weeks){
+    if(weeks==null) return 0.5;
+    if(weeks<=CURVE[0][0]) return CURVE[0][1];
+    for(var i=1;i<CURVE.length;i++){
+      if(weeks<=CURVE[i][0]){
+        var a=CURVE[i-1], b=CURVE[i];
+        return a[1]+(b[1]-a[1])*((weeks-a[0])/(b[0]-a[0]));
+      }
+    }
+    return 1;
+  }
+  function adultTarget(){ return Number(S.adultKg)>0?Number(S.adultKg):3.5; }
+  function refWeight(){ return adultTarget()*curveRatio(weeksOf()); }
   function autoWet(w){
     if(w==null) return 15;
     if(w<26) return 15;
@@ -511,16 +580,26 @@
   function wetDays(){ var d=daysSince(S.wetStart); return d==null?-999:d; }
   function wetOn(){ return wetDays()>=0; }
 
-  var DF=function(){ return dryFood(); }, WF=function(){ return wetFood(); }, FDF=function(){ return fdFood(); };
+  var DF=function(){ return dryFood(); }, WF=function(){ return wetFood(); }, FDF=function(){ return fdFood(); }, CKF=function(){ return ckFood(); };
 
   function compute(){
     var weeks=weeksOf(), m=monthsOf(), ew=estWeight(), w=ew.kg;
-    var df=DF(), wf=WF(), ff=FDF();
-    var kcal=70*Math.pow(w,0.75)*factor(weeks);
-    var fdG=Math.max(0,Number(S.fdG)||0);
+    var refW=refWeight();
+    var cap=refW*1.15;
+    var wUse=Math.min(w,cap);            // 超重时按理想体重算，避免越胖喂越多
+    var capped=(w-wUse)>0.005;
+    var df=DF(), wf=WF(), ff=FDF(), cf=CKF();
+    var kcal=70*Math.pow(wUse,0.75)*factor(weeks);
+    var pieceG=Number(ff.pieceG)>0?Number(ff.pieceG):1.5;
+    var fdN=Math.max(0,Math.round(Number(S.fdN)||0));
+    var fdG=Math.round(fdN*pieceG*10)/10;
     var fdKcal=fdG*((Number(ff.k)||380)/100);
-    if(fdKcal>kcal){ fdKcal=kcal; }
-    var rest=Math.max(0,kcal-fdKcal);
+    var ckPiece=Number(cf.pieceG)>0?Number(cf.pieceG):2;
+    var ckN=Math.max(0,Math.round(Number(S.ckN)||0));
+    var ckG=Math.round(ckN*ckPiece*10)/10;
+    var ckKcal=ckG*((Number(cf.k)||390)/100);
+    if(fdKcal+ckKcal>kcal){ ckKcal=Math.max(0,kcal-fdKcal); if(fdKcal>kcal) fdKcal=kcal; }
+    var rest=Math.max(0,kcal-fdKcal-ckKcal);
     var pct=(S.wetPct==null)?autoWet(weeks):Number(S.wetPct);
     var wetG=0;
     if(wetOn()){
@@ -529,10 +608,11 @@
     }
     var usedWet=wetG*((Number(wf.k)||100)/100);
     var dryG=Math.round((rest-usedWet)/((Number(df.k)||400)/100));
-    return {weeks:weeks,months:m,w:w,est:ew.est,kcal:Math.round(kcal),pct:pct,
-            wetG:wetG,dryG:dryG,fdG:fdG,wetOn:wetOn(),day:wetDays(),
-            df:df,wf:wf,ff:ff,
-            actual:Math.round(dryG*((Number(df.k)||400)/100)+usedWet+fdKcal)};
+    return {weeks:weeks,months:m,w:w,wUse:wUse,refW:refW,capped:capped,est:ew.est,kcal:Math.round(kcal),pct:pct,
+            wetG:wetG,dryG:dryG,fdG:fdG,fdN:fdN,pieceG:pieceG,
+            ckG:ckG,ckN:ckN,ckPiece:ckPiece,wetOn:wetOn(),day:wetDays(),
+            df:df,wf:wf,ff:ff,cf:cf,
+            actual:Math.round(dryG*((Number(df.k)||400)/100)+usedWet+fdKcal+ckKcal)};
   }
 
   function ratios(wet,lunch,n){
@@ -560,8 +640,12 @@
       {id:'m4',time:'23:00',name:'睡前',dry:arr[3],wet:w2,fd:0,desc:(w2>0?'湿粮这顿吃完，':'')+'干粮留 5 g 在碗里过夜'}
     ];
     if(c.fdG>0){
-      list.push({id:'m5',time:'15:00',name:'冻干加餐',dry:0,wet:0,fd:c.fdG,
-        desc:c.ff.n+'，38℃ 温水泡 5 分钟再给'});
+      list.push({id:'m5',time:'15:00',name:'冻干加餐',dry:0,wet:0,fd:c.fdG,fdN:c.fdN,
+        desc:c.ff.n+'，'+c.fdN+' 颗（约 '+c.fdG+' g），38℃ 泡 5 分钟'});
+    }
+    if(c.ckG>0){
+      list.push({id:'m6',time:'21:00',name:'洁齿冻干',dry:0,wet:0,fd:c.ckG,fdN:c.ckN,
+        desc:c.cf.n+'，'+c.ckN+' 颗（约 '+c.ckG+' g），刷牙后给，可以干嚼'});
     }
     list.sort(function(a,b){ return a.time<b.time?-1:1; });
     return list;
@@ -580,7 +664,8 @@
   }
 
   function fillSelects(){
-    var sd=document.getElementById('selDry'), sw=document.getElementById('selWet'), sf=document.getElementById('selFd');
+    var sd=document.getElementById('selDry'), sw=document.getElementById('selWet'),
+        sf=document.getElementById('selFd'), sc=document.getElementById('selCk');
     var dOpt='', wOpt='', fOpt='';
     S.foods.forEach(function(f){
       var st=foodStatus(f);
@@ -590,10 +675,11 @@
       else if(f.t==='wet') wOpt+=o;
       else fOpt+=o;
     });
-    sd.innerHTML=dOpt; sw.innerHTML=wOpt; sf.innerHTML=fOpt;
-    sd.value=S.dryId; sw.value=S.wetId; sf.value=S.fdId;
+    sd.innerHTML=dOpt; sw.innerHTML=wOpt; sf.innerHTML=fOpt; sc.innerHTML=fOpt;
+    sd.value=S.dryId; sw.value=S.wetId; sf.value=S.fdId; sc.value=S.ckId;
     sw.disabled=!wetOn();
-    sf.disabled=!(Number(S.fdG)>0);
+    sf.disabled=!(Number(S.fdN)>0);
+    sc.disabled=!(Number(S.ckN)>0);
   }
 
   function normalize(){
@@ -611,15 +697,22 @@
       var ff=S.foods.filter(function(x){return x.t==='fd';})[0];
       if(ff){ S.fdId=ff.id; ch=true; }
     }
+    var ck=foodById(S.ckId);
+    if(!ck || ck.t!=='fd'){
+      var cf=S.foods.filter(function(x){return x.t==='fd';});
+      var pick=cf.length>1?cf[cf.length-1]:cf[0];
+      if(pick){ S.ckId=pick.id; ch=true; }
+    }
     if(ch) saveS();
   }
 
   function render(){
     normalize();
     var c=compute(), meals=split(c), e=entry();
-    e.dry=c.dryG; e.wet=c.wetG; e.fd=c.fdG; e.kcal=c.actual;
-    e.dn=c.df.n; e.wn=c.wetG>0?c.wf.n:''; e.fn=c.fdG>0?c.ff.n:'';
+    e.dry=c.dryG; e.wet=c.wetG; e.fd=c.fdG; e.ck=c.ckG; e.kcal=c.actual;
+    e.dn=c.df.n; e.wn=c.wetG>0?c.wf.n:''; e.fn=c.fdG>0?c.ff.n:''; e.cn=c.ckG>0?c.cf.n:'';
     e.did=c.df.id||''; e.wid=c.wetG>0?(c.wf.id||''):''; e.fid=c.fdG>0?(c.ff.id||''):'';
+    e.cid=c.ckG>0?(c.cf.id||''):'';
     e.meals=meals.filter(function(m){return !m.skip;}).length;
     saveH();
 
@@ -634,16 +727,22 @@
     fillSelects();
     document.getElementById('kcDry').textContent=c.df.k+' kcal';
     document.getElementById('kcWet').textContent=c.wetG>0?(c.wf.k+' kcal'):'未启用';
-    document.getElementById('kcFd').textContent=c.fdG>0?(c.ff.k+' kcal'):'未启用';
-    document.getElementById('fdInput').value=c.fdG;
-    document.getElementById('fdHint').innerHTML = c.fdG>0
-      ? ('冻干每天 · 约 '+Math.round(c.fdG/1.5)+' 颗<span style="font-size:11px">　按每颗 1.5 g 估</span>')
-      : ('冻干每天 · 填 0 表示不喂<span style="font-size:11px">　填了克数才能选</span>');
+    document.getElementById('kcFd').textContent=c.fdN>0?(c.ff.k+' kcal'):'未启用';
+    document.getElementById('fdInput').value=c.fdN;
+    document.getElementById('fdHint').innerHTML = c.fdN>0
+      ? (c.fdN+' 颗 ≈ '+c.fdG+' g<span style="font-size:11px">　每颗 '+c.pieceG+' g</span>')
+      : ('冻干每天 · 填 0 表示不喂<span style="font-size:11px">　填颗数后才能选</span>');
+    document.getElementById('kcCk').textContent=c.ckN>0?(c.cf.k+' kcal'):'未启用';
+    document.getElementById('ckInput').value=c.ckN;
+    document.getElementById('ckHint').innerHTML = c.ckN>0
+      ? (c.ckN+' 颗 ≈ '+c.ckG+' g<span style="font-size:11px">　每颗 '+c.ckPiece+' g · 每天刷牙后给</span>')
+      : ('洁齿冻干 · 填 0 表示不喂<span style="font-size:11px">　填颗数后才能选</span>');
     var note=document.getElementById('foodNote');
     var warns=[];
     if(foodStatus(c.df).cls==='bad') warns.push('干粮「'+c.df.n+'」已过保质期');
     if(c.wetG>0 && foodStatus(c.wf).cls==='bad') warns.push('湿粮「'+c.wf.n+'」已过保质期');
     if(c.fdG>0 && foodStatus(c.ff).cls==='bad') warns.push('冻干「'+c.ff.n+'」已过保质期');
+    if(c.ckG>0 && foodStatus(c.cf).cls==='bad') warns.push('洁齿冻干「'+c.cf.n+'」已过保质期');
     if(warns.length){
       note.innerHTML='<span style="color:var(--red);font-weight:500">'+warns.join('；')+'，别喂了，换一袋。</span>';
     }else if(c.wetG>0 && Number(c.wf.k)<70){
@@ -653,16 +752,23 @@
     }
 
     var box=document.getElementById('phaseBox');
+    var boxHtml='';
+    if(c.capped){
+      boxHtml+='<div class="info" style="background:#fdf3e6;border-color:#f0dcc0;color:#8a5a1e;margin-top:0">'+
+        '<b>已按理想体重计算</b>　实测 '+c.w.toFixed(2)+' kg，超过这个周龄的参考值 '+c.refW.toFixed(2)+' kg 的 15%，热量按 '+c.wUse.toFixed(2)+' kg 算，不再往上加。<br>'+
+        '幼猫不减粮，放缓增重就行——每周涨 100 g 以内、摸得到肋骨不硌手，就是对的。</div>';
+    }
     if(!c.wetOn){
-      box.innerHTML='<div class="info"><b>还没到罐头期</b>　还有 '+Math.abs(c.day)+' 天（'+S.wetStart+' 起），在那之前只喂干粮。</div>';
+      boxHtml+='<div class="info"><b>还没到罐头期</b>　还有 '+Math.abs(c.day)+' 天（'+S.wetStart+' 起），在那之前只喂干粮 + 冻干奖励。</div>';
     }else if(c.day<4){
-      box.innerHTML='<div class="info"><b>罐头引入第 '+(c.day+1)+' 天</b>　每天 20 g 起步，观察 48 小时，没问题再往上加。</div>';
+      boxHtml+='<div class="info"><b>罐头引入第 '+(c.day+1)+' 天</b>　每天 20 g 起步，观察 48 小时，没问题再往上加。</div>';
     }else{
       var dv=daysSince('2026-11-15');
       if(dv!=null && dv>=0 && dv<=7){
-        box.innerHTML='<div class="info"><b>疫苗后应答期</b>　打针后 3–7 天肠道最敏感，不引入任何新食物。</div>';
-      }else{ box.innerHTML=''; }
+        boxHtml+='<div class="info"><b>疫苗后应答期</b>　打针后 3–7 天肠道最敏感，不引入任何新食物。</div>';
+      }
     }
+    box.innerHTML=boxHtml;
 
     var now=new Date(), mins=now.getHours()*60+now.getMinutes(), idx=-1;
     meals.forEach(function(m,i){
@@ -676,7 +782,7 @@
       if(m.skip) return;
       var on=!!e.ids[m.id];
       var amt;
-      if(m.fd>0) amt='<b>'+m.fd+'</b><i>g 冻干</i>';
+      if(m.fd>0) amt='<b>'+m.fdN+'</b><i>颗</i>';
       else if(m.wet>0&&m.dry>0) amt='<b>'+m.wet+'</b><i>g 罐</i> + <b>'+m.dry+'</b><i>g 粮</i>';
       else if(m.wet>0) amt='<b>'+m.wet+'</b><i>g 罐</i>';
       else amt='<b>'+m.dry+'</b><i>g 粮</i>';
@@ -698,7 +804,25 @@
     var parts=['干粮 '+c.dryG+' g'];
     if(c.wetG>0) parts.push('湿粮 '+c.wetG+' g');
     if(c.fdG>0) parts.push('冻干 '+c.fdG+' g');
+    if(c.ckG>0) parts.push('洁齿 '+c.ckG+' g');
     document.getElementById('totalText').textContent = parts.join(' + ')+' ≈ '+c.actual+' kcal';
+
+    var pk=document.getElementById('pkgNote');
+    var rmin=Number(c.df.rmin)||0, rmax=Number(c.df.rmax)||0;
+    if(rmin>0 && rmax>0){
+      var eq=Math.round(c.actual/((Number(c.df.k)||400)/100));
+      var head=(Math.abs(eq-c.dryG)<=1)?('当前 '+eq+' g'):('等效干粮 '+eq+' g');
+      pk.style.display='';
+      if(eq>rmax){
+        pk.innerHTML='<span style="color:var(--amber)">包装标 '+rmin+'–'+rmax+' g／天，'+head+'，高出 '+(eq-rmax)+' g。包装表按“不喂胖”取值，生长期略高属正常，以每周称重为准。</span>';
+      }else if(eq<rmin){
+        pk.innerHTML='<span style="color:var(--sub)">包装标 '+rmin+'–'+rmax+' g／天，'+head+'，还在下限以下。</span>';
+      }else{
+        pk.innerHTML='<span style="color:var(--sub)">包装标 '+rmin+'–'+rmax+' g／天，'+head+'，在区间内。</span>';
+      }
+    }else{
+      pk.style.display='none';
+    }
 
     document.getElementById('treatCount').textContent=(localStorage.getItem(weekKey())||0)+'/1';
 
@@ -715,7 +839,7 @@
     var stages=[{n:'4–6 月',m:5,weeks:22},{n:'6–9 月',m:7.5,weeks:33},{n:'9–12 月',m:10.5,weeks:46}];
     var body='';
     stages.forEach(function(st){
-      var w=Math.max(1.2, c.w+(st.m-mCur)*0.3);
+      var w=Math.max(1.2, c.wUse+(st.m-mCur)*0.3);
       var k=70*Math.pow(w,0.75)*factor(st.weeks);
       var pct=autoWet(st.weeks);
       var wg=Math.round(k*pct/100/wk/5)*5;
@@ -729,7 +853,7 @@
 
     var ratio='';
     [[4,6,15],[6,9,25],[9,12,33]].forEach(function(r){
-      var k=70*Math.pow(c.w,0.75)*2.0;
+      var k=70*Math.pow(c.wUse,0.75)*2.0;
       ratio+='<tr><td>'+r[0]+'–'+r[1]+' 月</td><td class="c">'+r[2]+'%</td><td class="c">'+
         Math.round(k*r[2]/100/wk)+' g</td></tr>';
     });
@@ -812,7 +936,9 @@
         '<select class="tp"><option value="dry"'+(f.t==='dry'?' selected':'')+'>干粮</option>'+
         '<option value="wet"'+(f.t==='wet'?' selected':'')+'>湿粮</option>'+
         '<option value="fd"'+(f.t==='fd'?' selected':'')+'>冻干</option></select></div>'+
-        '<div class="l3"><label>到期</label><input class="exp" type="date" value="'+(f.exp||'')+'">'+
+        '<div class="l3">'+
+        (f.t==='fd'?'<label>每颗</label><input class="pg" type="number" min="0.5" max="10" step="0.1" value="'+(Number(f.pieceG)>0?f.pieceG:1.5)+'"><span class="u">g</span>':'')+
+        '<label>到期</label><input class="exp" type="date" value="'+(f.exp||'')+'">'+
         '<label>开封</label><input class="opn" type="date" value="'+(f.open||'')+'">'+
         '<input class="life" type="number" min="0" max="180" step="1" placeholder="天" value="'+(Number(f.life)>0?f.life:'')+'">'+
         (st.txt?'<span class="st '+st.cls+'">'+st.txt+'</span>':'')+
@@ -845,7 +971,16 @@
           var wets=S.foods.filter(function(x){return x.t==='wet';});
           if(wets.length<=1){ alert('至少要留一款湿粮；暂时不喂可以把“罐头启用日”往后调'); this.value='wet'; return; }
         }
-        f.t=nt; saveS(); render(); renderFoods();
+        f.t=nt;
+        if(nt==='fd' && !(Number(f.pieceG)>0)) f.pieceG=1.5;
+        saveS(); render(); renderFoods();
+      };
+      var pgEl=row.querySelector('.pg');
+      if(pgEl) pgEl.onchange=function(){
+        var v=Number(this.value);
+        if(isNaN(v)||v<=0){ this.value=f.pieceG||1.5; return; }
+        f.pieceG=Math.round(Math.min(10,v)*10)/10;
+        saveS(); render(); renderFoods();
       };
       row.querySelector('.exp').onchange=function(){ f.exp=this.value||''; saveS(); render(); renderFoods(); };
       row.querySelector('.opn').onchange=function(){ f.open=this.value||''; saveS(); render(); renderFoods(); };
@@ -901,8 +1036,10 @@
 
     var lw=lastW();
     document.getElementById('inWeight').value = lw?Number(lw.kg).toFixed(2):'1.80';
+    var rw0=refWeight();
     document.getElementById('weightHint').textContent =
-      lw ? ('上次 '+lw.d+' 实测，'+(daysSince(lw.d)||0)+' 天前') : '每周称一次，改了会记一条';
+      '本周龄参考 '+(rw0*0.85).toFixed(2)+'–'+(rw0*1.15).toFixed(2)+' kg，超过就按上限算';
+    document.getElementById('inAdult').value = adultTarget().toFixed(1);
 
     var pct=(S.wetPct==null)?autoWet(weeksOf()):S.wetPct;
     document.getElementById('inWetPct').value=pct;
@@ -944,6 +1081,18 @@
     document.getElementById('wPlus').onclick=function(){
       setWeight((Number(wIn.value)||1.8)+0.05,true);
     };
+
+    var aIn=document.getElementById('inAdult');
+    function setAdult(v){
+      var n=Number(v);
+      if(!n||n<2||n>6){ aIn.value=adultTarget().toFixed(1); return; }
+      S.adultKg=Math.round(n*10)/10; saveS(); render(); bindSettings();
+    }
+    aIn.onchange=function(){ setAdult(this.value); };
+    aIn.onblur=function(){ setAdult(this.value); };
+    aIn.onkeydown=function(e){ if(e.key==='Enter'){ this.blur(); } };
+    document.getElementById('aMinus').onclick=function(){ setAdult(adultTarget()-0.1); };
+    document.getElementById('aPlus').onclick=function(){ setAdult(adultTarget()+0.1); };
     document.getElementById('inWetPct').oninput=function(){
       S.wetPct=Number(this.value); saveS();
       document.getElementById('wetPctText').textContent=this.value+'%';
@@ -957,16 +1106,25 @@
       render();
     };
 
-    var sd=document.getElementById('selDry'), sw=document.getElementById('selWet'), sf=document.getElementById('selFd');
+    var sd=document.getElementById('selDry'), sw=document.getElementById('selWet'),
+        sf=document.getElementById('selFd'), sc=document.getElementById('selCk');
     sd.onchange=function(){ S.dryId=this.value; saveS(); render(); };
     sw.onchange=function(){ S.wetId=this.value; saveS(); render(); };
     sf.onchange=function(){ S.fdId=this.value; saveS(); render(); };
+    sc.onchange=function(){ S.ckId=this.value; saveS(); render(); };
 
     document.getElementById('fdInput').onchange=function(){
       var v=Number(this.value);
       if(isNaN(v)||v<0) v=0;
-      if(v>30) v=30;
-      S.fdG=Math.round(v); saveS(); render();
+      if(v>20) v=20;
+      S.fdN=Math.round(v); saveS(); render();
+    };
+
+    document.getElementById('ckInput').onchange=function(){
+      var v=Number(this.value);
+      if(isNaN(v)||v<0) v=0;
+      if(v>10) v=10;
+      S.ckN=Math.round(v); saveS(); render();
     };
 
     document.getElementById('btnAddFood').onclick=function(){
@@ -979,10 +1137,10 @@
     };
 
     document.getElementById('btnExport').onclick=function(){
-      var lines=['日期,干粮,湿粮,冻干,合计g,kcal,完成,总餐'];
+      var lines=['日期,干粮,湿粮,主食冻干,洁齿冻干,合计g,kcal,完成,总餐'];
       Object.keys(H).sort().forEach(function(k){
         var v=H[k]||{};
-        lines.push([k,v.dn||'',v.wn||'',v.fn||'',(v.dry||0)+'/'+(v.wet||0)+'/'+(v.fd||0),v.kcal||'',Object.keys(v.ids||{}).length,v.meals||''].join(','));
+        lines.push([k,v.dn||'',v.wn||'',v.fn||'',v.cn||'',(v.dry||0)+'/'+(v.wet||0)+'/'+(v.fd||0)+'/'+(v.ck||0),v.kcal||'',Object.keys(v.ids||{}).length,v.meals||''].join(','));
       });
       var txt=lines.join('\n');
       if(navigator.clipboard&&navigator.clipboard.writeText){
