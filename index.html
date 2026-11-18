@@ -366,6 +366,10 @@
         <input type="checkbox" id="inLunch">
       </div>
       <div class="field">
+        <label>最近一次打针<span class="hint">前后 7 天不加新食物，系统会自动拦</span></label>
+        <input type="date" id="inVax">
+      </div>
+      <div class="field">
         <label>罐头启用日<span class="hint">这天之前只喂干粮</span></label>
         <input type="date" id="inWetStart">
       </div>
@@ -392,7 +396,7 @@
       <h2>数据</h2>
       <button class="btn" type="button" id="btnExport">导出记录（复制文本）</button>
       <button class="btn" type="button" id="btnReset">恢复默认设置</button>
-      <p class="note">数据只存在这台设备，不上传。换设备需要重新填。<br><span style="color:#a8a69c">版本 2026-11-10</span></p>
+      <p class="note">数据只存在这台设备，不上传。换设备需要重新填。<br><span style="color:#a8a69c">版本 2026-11-18</span></p>
     </div>
   </section>
 
@@ -429,7 +433,7 @@
   var D={
     birth:'2026-06-22',
     weightLog:[{d:'2026-11-06',kg:1.8}],
-    lunch:true, wetPct:null, wetStart:'2026-11-23', adultKg:3.5,
+    lunch:true, wetPct:null, wetStart:'2026-11-23', adultKg:3.5, vaxDate:'2026-11-15',
     foods:FOODS, dryId:'d1', wetId:'w1', fdId:'f1', fdN:0, ckId:'f3', ckN:2
   };
 
@@ -459,6 +463,7 @@
   if(S.ckN===undefined) S.ckN=2;
   if(!S.ckId) S.ckId='f3';
   if(S.adultKg===undefined) S.adultKg=3.5;
+  if(S.vaxDate===undefined) S.vaxDate='2026-11-15';
   var ckOk=false;
   if(S.foods){
     for(var ic=0;ic<S.foods.length;ic++){
@@ -613,7 +618,10 @@
     var wetG=0;
     if(wetOn()){
       var target=rest*pct/100/((Number(wf.k)||100)/100);
-      wetG = wetDays()<4 ? Math.min(20,Math.round(target/5)*5) : Math.round(target/5)*5;
+      var wd=wetDays();
+      // 有过软便史，分三档爬：20 g ×4 天 → 30 g ×3 天 → 目标量
+      var stepCap = wd<4 ? 20 : (wd<7 ? 30 : 999);
+      wetG = Math.min(stepCap, Math.round(target/5)*5);
     }
     var usedWet=wetG*((Number(wf.k)||100)/100);
     var dryG=Math.round((rest-usedWet)/((Number(df.k)||400)/100));
@@ -767,15 +775,32 @@
         '<b>已按理想体重计算</b>　实测 '+c.w.toFixed(2)+' kg，超过这个周龄的参考值 '+c.refW.toFixed(2)+' kg 的 15%，热量按 '+c.wUse.toFixed(2)+' kg 算，不再往上加。<br>'+
         '幼猫不减粮，放缓增重就行——每周涨 100 g 以内、摸得到肋骨不硌手，就是对的。</div>';
     }
+    // 疫苗窗口独立判断，不再挂在罐头分支里
+    var dv = S.vaxDate ? daysSince(S.vaxDate) : null;
+    if(dv!=null){
+      if(dv<0 && dv>=-7){
+        boxHtml+='<div class="info" style="background:#fdf3e6;border-color:#f0dcc0;color:#8a5a1e"><b>距打针还有 '+Math.abs(dv)+' 天</b>　这之前别加新食物、别洗澡，有软便就推迟接种。</div>';
+      }else if(dv>=0 && dv<3){
+        boxHtml+='<div class="info" style="background:#fdf3e6;border-color:#f0dcc0;color:#8a5a1e"><b>疫苗后第 '+(dv+1)+' 天</b>　正在应答，可能嗜睡、食欲下降、软便。只喂吃惯的东西，别加新的。</div>';
+      }else if(dv>=3 && dv<=6){
+        boxHtml+='<div class="info" style="background:#fdf3e6;border-color:#f0dcc0;color:#8a5a1e"><b>疫苗后第 '+(dv+1)+' 天 · 应答期</b>　肠道最敏感的窗口，到第 8 天才算过。这期间不引入罐头、不换粮、不加新零食。</div>';
+      }
+    }
+    // 罐头启用日是否撞在疫苗窗口里
+    if(S.wetStart && S.vaxDate && S.vaxDate!==''){
+      var d1=parseD(S.vaxDate), d2=parseD(S.wetStart);
+      if(d1 && d2){
+        var gap=Math.round((d2-d1)/86400000);
+        if(gap>=0 && gap<7){
+          boxHtml+='<div class="info" style="background:var(--red-bg);border-color:#e6c9c5;color:var(--red)"><b>日期冲突</b>　罐头启用日 '+S.wetStart+' 距打针只有 '+gap+' 天，还在应答期内。建议推到打针后第 8 天再开。</div>';
+        }
+      }
+    }
     if(!c.wetOn){
       boxHtml+='<div class="info"><b>还没到罐头期</b>　还有 '+Math.abs(c.day)+' 天（'+S.wetStart+' 起），在那之前只喂干粮 + 冻干奖励。</div>';
-    }else if(c.day<4){
-      boxHtml+='<div class="info"><b>罐头引入第 '+(c.day+1)+' 天</b>　每天 20 g 起步，观察 48 小时，没问题再往上加。</div>';
-    }else{
-      var dv=daysSince('2026-11-15');
-      if(dv!=null && dv>=0 && dv<=7){
-        boxHtml+='<div class="info"><b>疫苗后应答期</b>　打针后 3–7 天肠道最敏感，不引入任何新食物。</div>';
-      }
+    }else if(c.day<7){
+      var stageTxt = c.day<4 ? '20 g（这一档 4 天）' : '30 g（这一档 3 天）';
+      boxHtml+='<div class="info"><b>罐头引入第 '+(c.day+1)+' 天</b>　'+stageTxt+'，观察 48 小时，软便就退回上一档。</div>';
     }
     box.innerHTML=boxHtml;
 
@@ -1040,6 +1065,7 @@
 
   function bindSettings(){
     document.getElementById('inBirth').value=S.birth;
+    document.getElementById('inVax').value=S.vaxDate||'';
     document.getElementById('inWetStart').value=S.wetStart;
     document.getElementById('inLunch').checked=!!S.lunch;
 
@@ -1055,6 +1081,7 @@
     document.getElementById('wetPctText').textContent=pct+'%';
 
     document.getElementById('inBirth').onchange=function(){ S.birth=this.value||D.birth; saveS(); render(); bindSettings(); };
+    document.getElementById('inVax').onchange=function(){ S.vaxDate=this.value||''; saveS(); render(); };
     document.getElementById('inWetStart').onchange=function(){ S.wetStart=this.value||D.wetStart; saveS(); render(); };
     document.getElementById('inLunch').onchange=function(){ S.lunch=this.checked; saveS(); render(); };
 
