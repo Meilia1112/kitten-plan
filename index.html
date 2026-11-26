@@ -1294,7 +1294,8 @@
   function loadSched(){
     var f=document.getElementById('schedFrame');
     if(f && !f.getAttribute('src')){
-      f.setAttribute('src', f.getAttribute('data-src'));
+      // 带时间戳，绕开浏览器与 CDN 的旧缓存
+      f.setAttribute('src', f.getAttribute('data-src')+'?v='+Date.now());
     }
   }
 
