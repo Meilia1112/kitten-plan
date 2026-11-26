@@ -54,6 +54,16 @@
   .amt{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
   .amt b{font-size:18px;font-weight:600}
   .amt i{font-style:normal;font-size:11.5px;color:var(--sub);margin-left:1px}
+  .meal .ins{display:flex;gap:10px;margin-top:7px;flex-wrap:wrap}
+  .meal .ins label{display:flex;align-items:center;gap:4px;font-size:11.5px;color:var(--sub);white-space:nowrap}
+  .meal .ins input{
+    width:52px;border:1px solid var(--line);border-radius:7px;padding:5px 6px;
+    font-size:13.5px;text-align:right;font-family:inherit;background:#fff;color:var(--ink);
+    font-variant-numeric:tabular-nums
+  }
+  .meal .ins input::placeholder{color:#c6c4bb}
+  .meal .ins input:focus{outline:none;border-color:var(--green)}
+  .meal .ins .u{font-size:11px;color:var(--sub)}
   .tick{
     border:1.5px solid var(--line);background:#fff;border-radius:50%;
     width:26px;height:26px;flex:0 0 26px;display:flex;align-items:center;justify-content:center;
@@ -270,9 +280,10 @@
       <h2><span>今天 · <span id="todayText"></span></span><em id="doneText"></em></h2>
       <div id="mealList"></div>
       <div class="total">
-        <span>全天合计</span>
+        <span>今天已吃</span>
         <b id="totalText">—</b>
       </div>
+      <p class="note" id="planLine" style="margin-top:5px">—</p>
       <p class="note" id="pkgNote" style="display:none"></p>
     </div>
 
@@ -396,7 +407,7 @@
       <h2>数据</h2>
       <button class="btn" type="button" id="btnExport">导出记录（复制文本）</button>
       <button class="btn" type="button" id="btnReset">恢复默认设置</button>
-      <p class="note">数据只存在这台设备，不上传。换设备需要重新填。<br><span style="color:#a8a69c">版本 2026-11-18</span></p>
+      <p class="note">数据只存在这台设备，不上传。换设备需要重新填。<br><span style="color:#a8a69c">版本 2026-11-26</span></p>
     </div>
   </section>
 
@@ -433,7 +444,7 @@
   var D={
     birth:'2026-06-22',
     weightLog:[{d:'2026-11-06',kg:1.8}],
-    lunch:true, wetPct:null, wetStart:'2026-11-23', adultKg:3.5, vaxDate:'2026-11-15',
+    lunch:true, wetPct:null, wetStart:'2026-11-24', adultKg:3.5, vaxDate:'2026-11-15',
     foods:FOODS, dryId:'d1', wetId:'w1', fdId:'f1', fdN:0, ckId:'f3', ckN:2
   };
 
@@ -658,10 +669,12 @@
     ];
     if(c.fdG>0){
       list.push({id:'m5',time:'15:00',name:'冻干加餐',dry:0,wet:0,fd:c.fdG,fdN:c.fdN,
+        food:c.ff,pieceG:c.pieceG,
         desc:c.ff.n+'，'+c.fdN+' 颗（约 '+c.fdG+' g），38℃ 泡 5 分钟'});
     }
     if(c.ckG>0){
       list.push({id:'m6',time:'21:00',name:'洁齿冻干',dry:0,wet:0,fd:c.ckG,fdN:c.ckN,
+        food:c.cf,pieceG:c.ckPiece,
         desc:c.cf.n+'，'+c.ckN+' 颗（约 '+c.ckG+' g），刷牙后给，可以干嚼'});
     }
     list.sort(function(a,b){ return a.time<b.time?-1:1; });
@@ -672,7 +685,36 @@
     var k=today();
     if(!H[k]) H[k]={dry:0,wet:0,kcal:0,meals:0,ids:{}};
     if(!H[k].ids) H[k].ids={};
+    if(!H[k].act) H[k].act={};
     return H[k];
+  }
+  // 实际吃了多少：读记录，空字符串表示还没填
+  function actVal(e, mid, key){
+    var a=e.act&&e.act[mid];
+    if(!a) return '';
+    var v=a[key];
+    return (v===undefined||v===null||v==='')?'':v;
+  }
+  function actNum(e, mid, key){
+    var v=actVal(e,mid,key);
+    if(v==='') return null;
+    var n=Number(v);
+    return isNaN(n)?null:n;
+  }
+  // 把已填的克数折成热量
+  function actualTotals(e,c,meals){
+    var r={kcal:0,dry:0,wet:0,fdN:0,filled:0};
+    meals.forEach(function(m){
+      if(m.skip) return;
+      var any=false, v;
+      if(m.wet>0){ v=actNum(e,m.id,'wet'); if(v!=null){ r.wet+=v; r.kcal+=v*((Number(c.wf.k)||100)/100); any=true; } }
+      if(m.dry>0){ v=actNum(e,m.id,'dry'); if(v!=null){ r.dry+=v; r.kcal+=v*((Number(c.df.k)||400)/100); any=true; } }
+      if(m.fd>0){ v=actNum(e,m.id,'fd'); if(v!=null){ r.fdN+=v; r.kcal+=v*(Number(m.pieceG)||1.5)*((Number(m.food?m.food.k:390))/100); any=true; } }
+      if(any) r.filled++;
+    });
+    r.kcal=Math.round(r.kcal);
+    r.dry=Math.round(r.dry*10)/10; r.wet=Math.round(r.wet*10)/10;
+    return r;
   }
   function weekKey(){
     var d=new Date(), one=new Date(d.getFullYear(),0,1);
@@ -726,10 +768,20 @@
   function render(){
     normalize();
     var c=compute(), meals=split(c), e=entry();
-    e.dry=c.dryG; e.wet=c.wetG; e.fd=c.fdG; e.ck=c.ckG; e.kcal=c.actual;
+    // 库存扣减优先用实际吃了多少；没记录才按计划值算
+    var at0=actualTotals(e,c,meals.filter(function(m){return !m.skip;}));
+    var has=at0.filled>0;
+    e.dry=has?at0.dry:c.dryG;
+    e.wet=has?at0.wet:c.wetG;
+    var a5=actNum(e,'m5','fd'), a6=actNum(e,'m6','fd');
+    e.fd=(a5!=null)?(a5*(c.pieceG||1.5)):c.fdG;
+    e.ck=(a6!=null)?(a6*(c.ckPiece||2)):c.ckG;
+    e.kcal=has?at0.kcal:c.actual;
     e.dn=c.df.n; e.wn=c.wetG>0?c.wf.n:''; e.fn=c.fdG>0?c.ff.n:''; e.cn=c.ckG>0?c.cf.n:'';
-    e.did=c.df.id||''; e.wid=c.wetG>0?(c.wf.id||''):''; e.fid=c.fdG>0?(c.ff.id||''):'';
-    e.cid=c.ckG>0?(c.cf.id||''):'';
+    e.did=c.df.id||''; e.wid=c.wetG>0?(c.wf.id||''):'';
+    e.fid=(has||c.fdG>0)?(c.ff.id||''):'';
+    e.cid=(has||c.ckG>0)?(c.cf.id||''):'';
+    e.rec=JSON.parse(JSON.stringify(e.act||{}));
     e.meals=meals.filter(function(m){return !m.skip;}).length;
     saveH();
 
@@ -814,32 +866,55 @@
     var html='';
     meals.forEach(function(m,i){
       if(m.skip) return;
-      var on=!!e.ids[m.id];
-      var amt;
-      if(m.fd>0) amt='<b>'+m.fdN+'</b><i>颗</i>';
-      else if(m.wet>0&&m.dry>0) amt='<b>'+m.wet+'</b><i>g 罐</i> + <b>'+m.dry+'</b><i>g 粮</i>';
-      else if(m.wet>0) amt='<b>'+m.wet+'</b><i>g 罐</i>';
-      else amt='<b>'+m.dry+'</b><i>g 粮</i>';
-      html+='<div class="meal'+(i===idx?' now':'')+(on?' done':'')+'">'+
+      var ins='', v;
+      if(m.wet>0){
+        v=actVal(e,m.id,'wet');
+        ins+='<label>罐头 <input type="number" inputmode="decimal" min="0" max="400" step="1" data-m="'+m.id+'" data-k="wet" placeholder="'+m.wet+'" value="'+v+'"><span class="u">g</span></label>';
+      }
+      if(m.dry>0){
+        v=actVal(e,m.id,'dry');
+        ins+='<label>干粮 <input type="number" inputmode="decimal" min="0" max="200" step="1" data-m="'+m.id+'" data-k="dry" placeholder="'+m.dry+'" value="'+v+'"><span class="u">g</span></label>';
+      }
+      if(m.fd>0){
+        v=actVal(e,m.id,'fd');
+        var nm=m.food?m.food.n:'冻干';
+        ins+='<label>'+nm+' <input type="number" inputmode="decimal" min="0" max="30" step="1" data-m="'+m.id+'" data-k="fd" placeholder="'+m.fdN+'" value="'+v+'"><span class="u">颗</span></label>';
+      }
+      html+='<div class="meal'+(i===idx?' now':'')+'">'+
         '<div class="time">'+m.time+'</div>'+
         '<div class="what"><div class="name">'+m.name+(i===idx?'<span class="tag">现在</span>':'')+'</div>'+
-        '<div class="desc">'+m.desc+'</div></div>'+
-        '<div class="amt">'+amt+'</div>'+
-        '<button class="tick'+(on?' on':'')+'" data-m="'+m.id+'" type="button">✓</button>'+
+        '<div class="desc">'+m.desc+'</div>'+
+        '<div class="ins">'+ins+'</div></div>'+
       '</div>';
     });
     document.getElementById('mealList').innerHTML=html;
 
     var d=new Date();
     document.getElementById('todayText').textContent=(d.getMonth()+1)+' 月 '+d.getDate()+' 日';
+
     var total=meals.filter(function(m){return !m.skip;});
-    var doneN=total.filter(function(m){return e.ids[m.id];}).length;
-    document.getElementById('doneText').textContent=doneN+' / '+total.length+' 餐';
-    var parts=['干粮 '+c.dryG+' g'];
-    if(c.wetG>0) parts.push('湿粮 '+c.wetG+' g');
-    if(c.fdG>0) parts.push('冻干 '+c.fdG+' g');
-    if(c.ckG>0) parts.push('洁齿 '+c.ckG+' g');
-    document.getElementById('totalText').textContent = parts.join(' + ')+' ≈ '+c.actual+' kcal';
+    var at=actualTotals(e,c,total);
+    document.getElementById('doneText').textContent=at.filled+' / '+total.length+' 餐已记';
+
+    var diff=c.actual-at.kcal;
+    var tcol = at.kcal>c.actual ? 'var(--red)' : 'var(--green)';
+    document.getElementById('totalText').innerHTML = at.filled
+      ? ('<span style="color:'+tcol+'">'+at.kcal+'</span> <small>/ 上限 '+c.actual+' kcal</small>')
+      : ('<small>上限 '+c.actual+' kcal</small>');
+
+    var pn=document.getElementById('planLine');
+    if(pn){
+      var bits=['干粮 '+at.dry+' / 计划 '+c.dryG+' g'];
+      if(c.wetG>0) bits.push('罐头 '+at.wet+' / '+c.wetG+' g');
+      if(c.fdG+(c.ckG||0)>0) bits.push('冻干 '+at.fdN+' / '+(c.fdN+(c.ckN||0))+' 颗');
+      var tail='';
+      if(at.filled){
+        if(diff>0) tail='　·　还可吃 '+diff+' kcal';
+        else if(diff<0) tail='　·　<strong style="color:var(--red)">超 '+(-diff)+' kcal</strong>';
+        else tail='　·　正好到上限';
+      }
+      pn.innerHTML = bits.join(' · ')+tail;
+    }
 
     var pk=document.getElementById('pkgNote');
     var rmin=Number(c.df.rmin)||0, rmax=Number(c.df.rmax)||0;
@@ -860,7 +935,7 @@
 
     document.getElementById('treatCount').textContent=(localStorage.getItem(weekKey())||0)+'/1';
 
-    bindTicks(e);
+    bindMeals();
     renderGrowth(c);
     renderHist();
     renderWeight();
@@ -901,7 +976,7 @@
     }else{
       var html='';
       keys.forEach(function(k){
-        var v=H[k]||{}, ids=v.ids||{}, n=v.meals||4;
+        var v=H[k]||{}, ids=v.act||v.ids||{}, n=v.meals||4;
         var done=Object.keys(ids).length;
         var pct=n?Math.min(100,Math.round(done/n*100)):0;
         var dt=parseD(k), wk=['日','一','二','三','四','五','六'][dt.getDay()];
@@ -1048,17 +1123,22 @@
     });
   }
 
-  function bindTicks(e){
-    Array.prototype.forEach.call(document.querySelectorAll('.tick'),function(b){
-      b.onclick=function(){
-        var id=b.getAttribute('data-m');
-        if(e.ids[id]) delete e.ids[id]; else e.ids[id]=1;
+  function bindMeals(){
+    Array.prototype.forEach.call(document.querySelectorAll('.ins input'),function(inp){
+      inp.onchange=function(){
+        var e=entry();
+        var mid=this.getAttribute('data-m'), key=this.getAttribute('data-k');
+        var raw=String(this.value).trim();
+        if(!e.act[mid]) e.act[mid]={};
+        if(raw===''){ delete e.act[mid][key]; }
+        else{
+          var v=Number(raw);
+          if(isNaN(v)||v<0) v=0;
+          e.act[mid][key]=Math.round(v*10)/10;
+        }
+        if(Object.keys(e.act[mid]).length===0) delete e.act[mid];
         saveH();
-        b.classList.toggle('on',!!e.ids[id]);
-        if(b.parentNode) b.parentNode.classList.toggle('done',!!e.ids[id]);
-        var meals=split(compute()).filter(function(m){return !m.skip;});
-        var doneN=meals.filter(function(m){return e.ids[m.id];}).length;
-        document.getElementById('doneText').textContent=doneN+' / '+meals.length+' 餐';
+        render();
       };
     });
   }
@@ -1173,10 +1253,10 @@
     };
 
     document.getElementById('btnExport').onclick=function(){
-      var lines=['日期,干粮,湿粮,主食冻干,洁齿冻干,合计g,kcal,完成,总餐'];
+      var lines=['日期,干粮g,罐头g,主食冻干g,洁齿冻干g,实际kcal,已记餐数,总餐数'];
       Object.keys(H).sort().forEach(function(k){
         var v=H[k]||{};
-        lines.push([k,v.dn||'',v.wn||'',v.fn||'',v.cn||'',(v.dry||0)+'/'+(v.wet||0)+'/'+(v.fd||0)+'/'+(v.ck||0),v.kcal||'',Object.keys(v.ids||{}).length,v.meals||''].join(','));
+        lines.push([k,v.dry||0,v.wet||0,v.fd||0,v.ck||0,v.kcal||0,Object.keys(v.act||v.ids||{}).length,v.meals||''].join(','));
       });
       var txt=lines.join('\n');
       if(navigator.clipboard&&navigator.clipboard.writeText){
