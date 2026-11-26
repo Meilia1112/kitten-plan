@@ -200,6 +200,9 @@
   nav button.on .dot{background:currentColor;opacity:.9}
   #tab-sched{padding:0}
   #tab-sched .frame{width:100%;border:0;display:block;height:calc(100vh - 128px);background:#f6f5f2}
+  body.sched header{display:none}
+  body.sched #tab-sched .frame{height:calc(100vh - 56px - env(safe-area-inset-bottom))}
+  body.sched main.wrap{padding:0}
   .hide{display:none!important}
 </style>
 </head>
@@ -1305,6 +1308,7 @@
       });
       var names={today:'今日喂食',hist:'喂食记录',growth:'成长配比',set:'设置',sched:'喂食执行表'};
       document.getElementById('title').textContent=names[t];
+      document.body.classList.toggle('sched', t==='sched');
       if(t==='hist'){ renderHist(); renderWeight(); }
       if(t==='set'){ renderFoods(); }
       if(t==='sched'){ loadSched(); }
@@ -1322,6 +1326,13 @@
   }
 
   bindSettings();
+
+  // 支持 #sched 这类直链，刷新后停在同一页
+  var hk=String(location.hash||'').replace('#','');
+  if(hk){
+    var hb=document.querySelector('nav button[data-tab="'+hk+'"]');
+    if(hb) hb.click();
+  }
   renderFoods();
   render();
 })();

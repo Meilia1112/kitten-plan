@@ -40,16 +40,53 @@
   }
 
   @media (max-width: 640px){
-    body{padding:16px 10px 40px;font-size:13.5px}
-    .page{max-width:none}
-    h1{font-size:18px;line-height:1.45}
-    .sub{font-size:11.5px;line-height:1.65}
-    h2{font-size:13.5px;margin:22px 0 10px}
-    th,td{padding:6px 7px;font-size:11.5px;word-break:break-word}
-    .num{white-space:normal}
-    .note{font-size:11px;line-height:1.6}
-    .warn{padding:10px 12px;font-size:12px}
-    footer{font-size:11px}
+    body{padding:0 0 44px;font-size:14px;background:#f4f2ee}
+    .page{max-width:none;padding:14px 12px 0}
+    h1{font-size:19px;line-height:1.35;letter-spacing:0}
+    .sub{font-size:12px;line-height:1.6;color:#8a8980}
+    .lead{margin-top:10px;font-size:12.5px;line-height:1.65;color:#8a5a1e;
+      background:#fdf3e6;border:1px solid #f0dcc0;border-radius:10px;padding:10px 12px}
+    header{border-bottom:1px solid #dcdad3;padding-bottom:14px;margin-bottom:6px}
+    h2{font-size:14px;margin:26px 0 12px;padding:0 0 0 11px;border-left:3px solid #2f5d43;color:#1d1d1b}
+
+    /* 表格转卡片 */
+    table{display:block;width:100%;max-width:100%;background:transparent;margin-bottom:12px;border-collapse:separate;table-layout:auto}
+    thead{display:none}
+    tbody{display:block;width:auto;max-width:100%}
+    tr{display:block;width:auto;max-width:100%;box-sizing:border-box;
+      background:#fff;border:1px solid #e3e0d8;border-radius:12px;
+      padding:12px 14px;margin-bottom:10px}
+    td{display:block;width:auto;max-width:100%;box-sizing:border-box;
+      border:0;padding:3px 0;font-size:13px;line-height:1.62;
+      word-break:break-word;overflow-wrap:anywhere}
+    td:first-child{font-weight:600;font-size:15px;color:#1d1d1b;
+      padding:0 0 7px;margin-bottom:6px;border-bottom:1px solid #f0eee8}
+    td[data-l]:not(:first-child)::before{
+      content:attr(data-l);color:#a3a198;font-size:11.5px;display:inline-block;
+      min-width:38px;margin-right:4px;vertical-align:top
+    }
+    /* 类别色条 */
+    tr[data-cat="干粮"]{border-left:3px solid #7fa88c}
+    tr[data-cat="湿粮"]{border-left:3px solid #8fa6bf}
+    tr[data-cat="冻干"]{border-left:3px solid #c9a978}
+    tr[data-cat="零食"]{border-left:3px solid #c0b9ab}
+    tr[data-cat="汤罐"]{border-left:3px solid #a9b8c6}
+    tr[data-cat="主食"]{border-left:3px solid #7fa88c}
+    /* 「内容」这类泛标签不显示，值本身就是主体 */
+    td[data-l="内容"]:not(:first-child)::before{content:none!important;display:none!important}
+    td[data-l="内容"]{font-size:13.5px}
+    /* 「物品」当副标题，不再显示字段名 */
+    td[data-l="物品"]:not(:first-child)::before{content:none!important;display:none!important}
+    td[data-l="物品"]{font-weight:600;font-size:13.5px;color:#2f5d43;padding-top:0;padding-bottom:6px}
+    /* 「日期」「时间」「阶段」当标题时稍微收紧 */
+    td:first-child{letter-spacing:.2px}
+    td.num{white-space:normal;font-variant-numeric:tabular-nums}
+    td[colspan]{font-weight:600;font-size:13.5px}
+
+    .warn{padding:12px 14px;font-size:12.5px;border-radius:10px;line-height:1.7}
+    .note{font-size:12px;line-height:1.72;color:#7b7a72;margin:8px 0 0}
+    footer{font-size:11px;line-height:1.75;color:#9a988e;margin-top:26px}
+    #backBar{margin-bottom:10px}
   }
 </style>
 </head>
@@ -63,11 +100,9 @@ try{ if(window.parent!==window){ var bb=document.getElementById('backBar'); if(b
 </script>
 
 <header>
-  <h1>4 月龄矮脚幼猫 · 喂食执行表</h1>
-  <div class="sub">v3 ｜ 2026-06-22 出生，今日 19.6 周 / 4.5 月龄 ｜ 起始 11-06 ｜ 11/15 接种第三针 ｜ 目标周增重 100–130 g ｜ 目标粪便 3 分（长条、表面微湿）</div>
-  <div style="margin-top:11px;font-size:12px;color:#8a5a1e;background:#fdf3e6;border:1px solid #f0dcc0;border-radius:8px;padding:9px 11px;line-height:1.65">
-    <strong>这是 11 月 6 日定稿的静态版</strong>，讲的是库存怎么处置、各阶段规则、疫苗窗口这些一次性决策。<strong>每天吃多少克以「今天」页为准</strong>——那边会按体重和月龄自动重算。
-  </div>
+  <h1>矮脚幼猫 · 喂食执行表</h1>
+  <div class="sub">22.4 周 · 5.2 月龄　|　目标周增重 100–130 g　|　11/26 更新</div>
+  <div class="lead">库存处置、阶段规则、罐头排期。<strong>每天吃多少克，以「今天」页为准</strong>。</div>
 </header>
 
 <h2>一、库存处置</h2>
@@ -78,8 +113,8 @@ try{ if(window.parent!==window){ var bb=document.getElementById('backBar'); if(b
   <tbody>
     <tr><td>干粮</td><td><strong>冠能幼猫粮</strong></td><td class="num">现有</td><td style="color:#2f5d43;font-weight:600">留</td><td>唯一主食，吃到 12 月龄</td></tr>
     <tr><td>干粮</td><td>比乐 50g×3</td><td class="num">150 g</td><td style="color:#2f5d43;font-weight:600">留</td><td>上海福贝代工，国产中端。只当断粮应急，不日常喂</td></tr>
-    <tr><td>干粮</td><td>蓝氏低温烘焙乳鸽粮</td><td class="num">300 g<br>开封 1 周</td><td style="color:#7a5a22;font-weight:600">转出</td><td>烘焙粮开封窗口 3–4 周，11/30 才轮到它，已到边缘</td></tr>
-    <tr><td>干粮</td><td>布兰德试吃装</td><td class="num">十几袋</td><td style="color:#7a5a22;font-weight:600">留 3 袋<br>其余转出</td><td>营销驱动、代工生产，不适合当幼猫主力</td></tr>
+    <tr><td>干粮</td><td>蓝氏低温烘焙乳鸽粮</td><td class="num">300 g<span style="color:#a3a198;font-size:11.5px">（开封 1 周）</span></td><td style="color:#7a5a22;font-weight:600">转出</td><td>烘焙粮开封窗口 3–4 周，11/30 才轮到它，已到边缘</td></tr>
+    <tr><td>干粮</td><td>布兰德试吃装</td><td class="num">十几袋</td><td style="color:#7a5a22;font-weight:600">留 3 袋<span style="color:#a3a198;font-size:11.5px">（其余转出）</span></td><td>营销驱动、代工生产，不适合当幼猫主力</td></tr>
     <tr><td>湿粮</td><td><strong>喵凡思主食罐 40g×6</strong></td><td class="num">240 g</td><td style="color:#2f5d43;font-weight:600">留</td><td>第一顺位，11/23 起用</td></tr>
     <tr><td>湿粮</td><td><strong>帕蓝姆幼猫罐 40g×4</strong></td><td class="num">160 g</td><td style="color:#2f5d43;font-weight:600">留</td><td>第二顺位，先确认标签写“全价”</td></tr>
     <tr><td>湿粮</td><td>皇家慕斯肉泥 85g×1</td><td class="num">85 g</td><td style="color:#2f5d43;font-weight:600">留</td><td>这批里品质最好的一罐，排 12/05 用</td></tr>
@@ -87,7 +122,7 @@ try{ if(window.parent!==window){ var bb=document.getElementById('backBar'); if(b
     <tr><td>湿粮</td><td>珍致全价主食罐 85g×2</td><td class="num">170 g</td><td style="color:#2f5d43;font-weight:600">留</td><td>雀巢普瑞纳旗下，和冠能同集团，品控最稳的一档。排 12/23 用</td></tr>
     <tr><td>湿粮</td><td>喵三餐全价主食餐包 40g×2</td><td class="num">80 g</td><td style="color:#2f5d43;font-weight:600">留</td><td>水分 82%，青岛万耀维盛产。排 12/07</td></tr>
     <tr><td>湿粮</td><td>格吾安全价鲜肉主食罐 85g×1</td><td class="num">85 g</td><td style="color:#2f5d43;font-weight:600">留</td><td>蛋白实测 15.6%、淀粉未检出，山东代工。注意有糊底反馈</td></tr>
-    <tr><td>汤罐</td><td>帕蓝姆汤罐 90g×6<br>（鸽枸 / 鸭梨 / 鸡蔓）</td><td class="num">540 g</td><td style="color:#2f5d43;font-weight:600">留</td><td>1.65 元/罐，实际是补水零食。<strong>一次开一罐，分两天吃完</strong>，每周最多一罐</td></tr>
+    <tr><td>汤罐</td><td>帕蓝姆汤罐 90g×6<span style="color:#a3a198;font-size:11.5px">（鸽枸 / 鸭梨 / 鸡蔓）</span></td><td class="num">540 g</td><td style="color:#2f5d43;font-weight:600">留</td><td>1.65 元/罐，实际是补水零食。<strong>一次开一罐，分两天吃完</strong>，每周最多一罐</td></tr>
     <tr><td>汤罐</td><td>小毛豆美浓汤 85g×3</td><td class="num">255 g</td><td style="color:#2f5d43;font-weight:600">留</td><td>标签自己写的是“宠物零食”，只能补水加餐，不占主食额度</td></tr>
     <tr><td>汤罐</td><td>爱喜雅幼猫零食餐包 60g×1</td><td class="num">60 g</td><td style="color:#2f5d43;font-weight:600">留</td><td>同样标“零食”。分 2 次，每次 30 g，当那一周的湿加餐</td></tr>
     <tr><td>汤罐</td><td>赠品罐 / 补水罐</td><td class="num">若干</td><td style="color:#2f5d43;font-weight:600">只当加餐</td><td>标签写“全价”才能占主食额度；否则每次 ≤20 g，当天干粮减 5 g</td></tr>
@@ -273,5 +308,33 @@ try{ if(window.parent!==window){ var bb=document.getElementById('backBar'); if(b
 </footer>
 
 </div>
+
+<script>
+(function(){
+  var narrow = window.matchMedia('(max-width: 640px)').matches;
+  Array.prototype.forEach.call(document.querySelectorAll('table'),function(tb){
+    var ths=tb.querySelectorAll('thead th');
+    if(!ths.length) return;
+    var labels=Array.prototype.map.call(ths,function(th){ return th.textContent.trim(); });
+    var lastCat='';
+    Array.prototype.forEach.call(tb.querySelectorAll('tbody tr'),function(tr){
+      Array.prototype.forEach.call(tr.children,function(td,i){
+        if(labels[i] && !td.hasAttribute('data-l')) td.setAttribute('data-l',labels[i]);
+      });
+      if(!narrow) return;
+      var first=tr.children[0];
+      if(!first) return;
+      var cat=first.textContent.trim();
+      // 连续相同类别只显示一次，其余靠左侧色条区分
+      if(cat && cat===lastCat && tr.children.length>=4){
+        first.style.display='none';
+        tr.style.paddingTop='9px';
+      }
+      if(cat) tr.setAttribute('data-cat',cat);
+      lastCat=cat;
+    });
+  });
+})();
+</script>
 </body>
 </html>
