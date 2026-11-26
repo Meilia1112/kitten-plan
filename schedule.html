@@ -55,9 +55,12 @@
 </head>
 <body>
 <div class="page">
-<div style="margin-bottom:14px">
+<div id="backBar" style="margin-bottom:14px">
   <a href="index.html" style="display:inline-block;font-size:13px;color:#2f5d43;text-decoration:none;border:1px solid #cddad3;background:#eef4f0;padding:7px 13px;border-radius:9px">‹ 返回喂食计划</a>
 </div>
+<script>
+try{ if(window.parent!==window){ var bb=document.getElementById('backBar'); if(bb) bb.style.display='none'; } }catch(e){}
+</script>
 
 <header>
   <h1>4 月龄矮脚幼猫 · 喂食执行表</h1>

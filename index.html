@@ -198,6 +198,8 @@
   nav button.on{color:var(--green);background:var(--green-bg);font-weight:600}
   nav .dot{width:16px;height:16px;border-radius:5px;border:1.5px solid currentColor;opacity:.7}
   nav button.on .dot{background:currentColor;opacity:.9}
+  #tab-sched{padding:0}
+  #tab-sched .frame{width:100%;border:0;display:block;height:calc(100vh - 128px);background:#f6f5f2}
   .hide{display:none!important}
 </style>
 </head>
@@ -221,8 +223,8 @@
 <main class="wrap">
 
   <section id="tab-today">
-    <a class="linkbar" href="schedule.html">
-      <span>喂食执行表<em>库存处置 · 阶段规则 · 疫苗窗口</em></span>
+    <a class="linkbar" href="javascript:void(0)" id="goSched">
+      <span>喂食执行表<em>库存处置 · 阶段规则 · 罐头排期</em></span>
       <b>查看 ›</b>
     </a>
     <div id="phaseBox"></div>
@@ -349,6 +351,10 @@
     </div>
   </section>
 
+  <section id="tab-sched" class="hide">
+    <iframe id="schedFrame" class="frame" data-src="schedule.html" title="喂食执行表"></iframe>
+  </section>
+
   <section id="tab-set" class="hide">
     <div class="card">
       <h2>基础信息</h2>
@@ -417,6 +423,7 @@
   <button type="button" data-tab="today" class="on"><span class="dot"></span>今天</button>
   <button type="button" data-tab="hist"><span class="dot"></span>记录</button>
   <button type="button" data-tab="growth"><span class="dot"></span>成长</button>
+  <button type="button" data-tab="sched"><span class="dot"></span>执行表</button>
   <button type="button" data-tab="set"><span class="dot"></span>设置</button>
 </nav>
 
@@ -1281,21 +1288,38 @@
     };
   }
 
+  function loadSched(){
+    var f=document.getElementById('schedFrame');
+    if(f && !f.getAttribute('src')){
+      f.setAttribute('src', f.getAttribute('data-src'));
+    }
+  }
+
   Array.prototype.forEach.call(document.querySelectorAll('nav button'),function(b){
     b.onclick=function(){
       Array.prototype.forEach.call(document.querySelectorAll('nav button'),function(x){x.classList.remove('on');});
       b.classList.add('on');
       var t=b.getAttribute('data-tab');
-      ['today','hist','growth','set'].forEach(function(k){
+      ['today','hist','growth','set','sched'].forEach(function(k){
         document.getElementById('tab-'+k).classList.toggle('hide',k!==t);
       });
-      var names={today:'今日喂食',hist:'喂食记录',growth:'成长配比',set:'设置'};
+      var names={today:'今日喂食',hist:'喂食记录',growth:'成长配比',set:'设置',sched:'喂食执行表'};
       document.getElementById('title').textContent=names[t];
       if(t==='hist'){ renderHist(); renderWeight(); }
       if(t==='set'){ renderFoods(); }
+      if(t==='sched'){ loadSched(); }
       window.scrollTo({top:0,behavior:'smooth'});
     };
   });
+
+  var gs=document.getElementById('goSched');
+  if(gs){
+    gs.onclick=function(ev){
+      ev.preventDefault();
+      var nb=document.querySelector('nav button[data-tab="sched"]');
+      if(nb) nb.click();
+    };
+  }
 
   bindSettings();
   renderFoods();
